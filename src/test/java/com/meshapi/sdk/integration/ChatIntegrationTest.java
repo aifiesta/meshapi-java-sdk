@@ -22,8 +22,8 @@ class ChatIntegrationTest {
 
     @BeforeAll
     static void setup() {
-        String baseUrl = System.getenv().getOrDefault("ROUTERSVC_BASE_URL", "http://localhost:8000");
-        String token = System.getenv().getOrDefault("ROUTERSVC_TOKEN", "rsk_01KN96KQWDPF2X1E9CP8567JY4");
+        String baseUrl = System.getenv().getOrDefault("MESHAPI_BASE_URL", "http://localhost:8000");
+        String token = System.getenv().getOrDefault("MESHAPI_TOKEN", "rsk_01KN96KQWDPF2X1E9CP8567JY4");
         client = MeshAPI.builder().baseUrl(baseUrl).token(token).build();
     }
 

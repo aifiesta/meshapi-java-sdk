@@ -35,6 +35,7 @@ public class HttpClient {
         this.javaClient = javaClient != null ? javaClient :
                 java.net.http.HttpClient.newBuilder()
                         .connectTimeout(timeout)
+                        .version(java.net.http.HttpClient.Version.HTTP_1_1)
                         .build();
         this.mapper = mapper;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;

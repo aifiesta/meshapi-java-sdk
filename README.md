@@ -12,7 +12,7 @@ Java SDK for the MeshAPI AI model gateway.
 Add to `pom.xml`:
 ```xml
 <dependency>
-  <groupId>com.meshapi</groupId>
+  <groupId>com.meshapi.sdk</groupId>
   <artifactId>meshapi-java-sdk</artifactId>
   <version>0.1.0</version>
 </dependency>
@@ -61,7 +61,7 @@ client.templates().delete(tmpl.id);
 ```java
 try {
     resp = client.chat().completions().create(params);
-} catch (MeshAPIApiError e) {
+} catch (MeshAPIError e) {
     System.out.println(e.getStatus());           // HTTP status
     System.out.println(e.getErrorCode());        // "unauthorized", "rate_limit_exceeded", etc.
     System.out.println(e.getRequestId());        // req_<ULID>
@@ -84,12 +84,12 @@ MeshAPI client = MeshAPI.builder()
 
 ## Streaming Failure Recovery
 
-**Streams do not retry.** On failure, `Iterator.next()` throws `MeshAPIApiError`.
+**Streams do not retry.** On failure, `Iterator.next()` throws `MeshAPIError`.
 
 ```java
 try {
     while (it.hasNext()) { process(it.next()); }
-} catch (MeshAPIApiError e) {
+} catch (MeshAPIError e) {
     if ("stream_interrupted".equals(e.getErrorCode())) {
         // restart a new stream request
     }

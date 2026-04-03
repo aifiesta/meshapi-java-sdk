@@ -34,6 +34,7 @@ public class ChatCompletionRequest {
     public List<ChatMessage> getMessages() { return messages; }
     public String getModel() { return model; }
     public Boolean getStream() { return stream; }
+    public void setStream(boolean stream) { this.stream = stream; }
 
     public static Builder builder() { return new Builder(); }
 

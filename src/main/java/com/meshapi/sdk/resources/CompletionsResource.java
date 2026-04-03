@@ -19,13 +19,8 @@ public class CompletionsResource {
      * Sends a non-streaming chat completion request.
      */
     public ChatCompletionResponse create(ChatCompletionRequest params) {
-        // Force stream=false
-        ChatCompletionRequest req = ChatCompletionRequest.builder()
-                .messages(params.getMessages())
-                .model(params.getModel())
-                .stream(false)
-                .build();
-        return http.post("/v1/chat/completions", req, ChatCompletionResponse.class);
+        params.setStream(false);
+        return http.post("/v1/chat/completions", params, ChatCompletionResponse.class);
     }
 
     /**
@@ -39,11 +34,7 @@ public class CompletionsResource {
      * {@link #stream} call if reconnection is needed.
      */
     public Iterator<ChatCompletionChunk> stream(ChatCompletionRequest params) {
-        ChatCompletionRequest req = ChatCompletionRequest.builder()
-                .messages(params.getMessages())
-                .model(params.getModel())
-                .stream(true)
-                .build();
-        return http.stream("/v1/chat/completions", req);
+        params.setStream(true);
+        return http.stream("/v1/chat/completions", params);
     }
 }
