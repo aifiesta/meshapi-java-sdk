@@ -1,6 +1,6 @@
-# routersvc-java-sdk
+# meshapi-java-sdk
 
-Java SDK for the RouterSVC AI model gateway.
+Java SDK for the MeshAPI AI model gateway.
 
 ## Requirements
 
@@ -12,8 +12,8 @@ Java SDK for the RouterSVC AI model gateway.
 Add to `pom.xml`:
 ```xml
 <dependency>
-  <groupId>com.routersvc</groupId>
-  <artifactId>routersvc-java-sdk</artifactId>
+  <groupId>com.meshapi</groupId>
+  <artifactId>meshapi-java-sdk</artifactId>
   <version>0.1.0</version>
 </dependency>
 ```
@@ -61,7 +61,7 @@ client.templates().delete(tmpl.id);
 ```java
 try {
     resp = client.chat().completions().create(params);
-} catch (RouterSvcApiError e) {
+} catch (MeshAPIApiError e) {
     System.out.println(e.getStatus());           // HTTP status
     System.out.println(e.getErrorCode());        // "unauthorized", "rate_limit_exceeded", etc.
     System.out.println(e.getRequestId());        // req_<ULID>
@@ -84,12 +84,12 @@ MeshAPI client = MeshAPI.builder()
 
 ## Streaming Failure Recovery
 
-**Streams do not retry.** On failure, `Iterator.next()` throws `RouterSvcApiError`.
+**Streams do not retry.** On failure, `Iterator.next()` throws `MeshAPIApiError`.
 
 ```java
 try {
     while (it.hasNext()) { process(it.next()); }
-} catch (RouterSvcApiError e) {
+} catch (MeshAPIApiError e) {
     if ("stream_interrupted".equals(e.getErrorCode())) {
         // restart a new stream request
     }
@@ -103,8 +103,8 @@ try {
 mvn test
 
 # Integration tests (requires localhost:8000)
-ROUTERSVC_BASE_URL=http://localhost:8000 \
-ROUTERSVC_TOKEN=rsk_... \
+MESHAPI_BASE_URL=http://localhost:8000 \
+MESHAPI_TOKEN=rsk_... \
 mvn test -Pintegration
 
 # Build JAR (test classes excluded automatically)
