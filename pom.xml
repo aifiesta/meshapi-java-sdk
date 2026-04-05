@@ -4,12 +4,47 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>com.meshapi.sdk</groupId>
+  <groupId>ai.meshapi</groupId>
   <artifactId>meshapi-java-sdk</artifactId>
   <version>0.1.0</version>
   <packaging>jar</packaging>
   <name>MeshAPI Java SDK</name>
-  <description>Java SDK for the MeshAPI AI model gateway</description>
+  <description>Official Java SDK for MeshAPI</description>
+  <url>https://github.com/aifiesta/meshapi-java-sdk</url>
+
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>aifiesta</id>
+      <name>AI Fiesta</name>
+      <email>dev@meshapi.ai</email>
+      <organization>MeshAPI</organization>
+      <organizationUrl>https://meshapi.ai</organizationUrl>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:git://github.com/aifiesta/meshapi-java-sdk.git</connection>
+    <developerConnection>scm:git:ssh://github.com/aifiesta/meshapi-java-sdk.git</developerConnection>
+    <url>https://github.com/aifiesta/meshapi-java-sdk/tree/main</url>
+  </scm>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+    </snapshotRepository>
+    <repository>
+      <id>ossrh</id>
+      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <java.version>17</java.version>
@@ -76,11 +111,54 @@
         <artifactId>maven-jar-plugin</artifactId>
         <version>3.4.1</version>
       </plugin>
+
+      <!-- Sources JAR (required by Maven Central) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-source-plugin</artifactId>
+        <version>3.3.1</version>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar-no-fork</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Javadoc JAR (required by Maven Central) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.7.0</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <!-- Nexus staging: deploy to OSSRH and auto-release -->
+      <plugin>
+        <groupId>org.sonatype.plugins</groupId>
+        <artifactId>nexus-staging-maven-plugin</artifactId>
+        <version>1.7.0</version>
+        <extensions>true</extensions>
+        <configuration>
+          <serverId>ossrh</serverId>
+          <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+          <autoReleaseAfterClose>true</autoReleaseAfterClose>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
-  <!-- Integration test profile -->
   <profiles>
+    <!-- Integration test profile -->
     <profile>
       <id>integration</id>
       <build>
@@ -96,6 +174,29 @@
                 <include>**/integration/**Test.java</include>
               </includes>
             </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <!-- Release profile: GPG signing (activate with -Prelease) -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.4</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
           </plugin>
         </plugins>
       </build>
