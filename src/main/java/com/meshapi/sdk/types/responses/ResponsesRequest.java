@@ -1,0 +1,76 @@
+package com.meshapi.sdk.types.responses;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.meshapi.sdk.types.chat.ChatMessage;
+
+import java.util.List;
+
+/**
+ * Request body for POST /v1/responses.
+ * Use {@link #builder()} to construct.
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class ResponsesRequest {
+
+    @JsonProperty("input")             private Object input;   // String or List<ChatMessage>
+    @JsonProperty("model")             private String model;
+    @JsonProperty("stream")            private Boolean stream;
+    @JsonProperty("session_id")        private String sessionId;
+    @JsonProperty("max_output_tokens") private Integer maxOutputTokens;
+    @JsonProperty("temperature")       private Double temperature;
+    @JsonProperty("top_p")             private Double topP;
+    @JsonProperty("seed")              private Integer seed;
+    @JsonProperty("reasoning")         private ReasoningConfig reasoning;
+    @JsonProperty("tools")             private List<Object> tools;
+    @JsonProperty("tool_choice")       private Object toolChoice;
+    @JsonProperty("response_format")   private Object responseFormat;
+    @JsonProperty("plugins")           private List<Object> plugins;
+    @JsonProperty("user")              private String user;
+
+    private ResponsesRequest() {}
+
+    /** Called by ResponsesResource before sending — do not call directly. */
+    public void setStream(boolean stream) { this.stream = stream; }
+
+    public static Builder builder() { return new Builder(); }
+
+    /** Controls chain-of-thought depth for supported models. */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public static class ReasoningConfig {
+        /** {@code "minimal"}, {@code "low"}, {@code "medium"}, or {@code "high"} */
+        @JsonProperty("effort") public String effort;
+
+        public ReasoningConfig(String effort) { this.effort = effort; }
+    }
+
+    public static final class Builder {
+        private final ResponsesRequest req = new ResponsesRequest();
+
+        /** Plain text query. */
+        public Builder input(String text) { req.input = text; return this; }
+
+        /** Structured message list — same format as chat/completions. */
+        public Builder input(List<ChatMessage> messages) { req.input = messages; return this; }
+
+        public Builder model(String model)           { req.model = model; return this; }
+        public Builder sessionId(String id)          { req.sessionId = id; return this; }
+        public Builder maxOutputTokens(int n)        { req.maxOutputTokens = n; return this; }
+        public Builder temperature(double t)         { req.temperature = t; return this; }
+        public Builder topP(double p)                { req.topP = p; return this; }
+        public Builder seed(int seed)                { req.seed = seed; return this; }
+
+        /** Enable chain-of-thought reasoning with the given effort level. */
+        public Builder reasoning(String effort) {
+            req.reasoning = new ReasoningConfig(effort);
+            return this;
+        }
+
+        public Builder tools(List<Object> tools)     { req.tools = tools; return this; }
+        public Builder toolChoice(Object tc)         { req.toolChoice = tc; return this; }
+        public Builder responseFormat(Object rf)     { req.responseFormat = rf; return this; }
+        public Builder user(String user)             { req.user = user; return this; }
+
+        public ResponsesRequest build() { return req; }
+    }
+}

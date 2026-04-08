@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshapi.sdk.internal.HttpClient;
 import com.meshapi.sdk.resources.ChatResource;
 import com.meshapi.sdk.resources.ModelsResource;
+import com.meshapi.sdk.resources.ResponsesResource;
 import com.meshapi.sdk.resources.TemplatesResource;
 
 import java.time.Duration;
@@ -34,6 +35,7 @@ public class MeshAPI {
     public static final String VERSION = "0.1.0";
 
     private final ChatResource chat;
+    private final ResponsesResource responses;
     private final ModelsResource models;
     private final TemplatesResource templates;
 
@@ -48,11 +50,13 @@ public class MeshAPI {
                 Duration.ofMillis(builder.timeoutMs)
         );
         this.chat = new ChatResource(http);
+        this.responses = new ResponsesResource(http);
         this.models = new ModelsResource(http);
         this.templates = new TemplatesResource(http);
     }
 
     public ChatResource chat() { return chat; }
+    public ResponsesResource responses() { return responses; }
     public ModelsResource models() { return models; }
     public TemplatesResource templates() { return templates; }
 

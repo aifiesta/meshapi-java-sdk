@@ -5,6 +5,7 @@ import com.meshapi.sdk.MeshAPIError;
 import com.meshapi.sdk.types.chat.ChatCompletionChunk;
 import com.meshapi.sdk.types.chat.ChatCompletionResponse;
 import com.meshapi.sdk.types.models.ModelInfo;
+import com.meshapi.sdk.types.responses.ResponsesResponse;
 import com.meshapi.sdk.types.templates.TemplateSummary;
 import org.junit.jupiter.api.Test;
 
@@ -72,6 +73,31 @@ class ContractTest {
         assertTrue(tmpl.system.contains("pirate"));
         assertEquals(1, tmpl.variables.size());
         assertEquals("topic", tmpl.variables.get(0));
+    }
+
+    // -----------------------------------------------------------------------
+    // Responses shapes
+    // -----------------------------------------------------------------------
+
+    @Test
+    void responsesResponse() throws Exception {
+        ResponsesResponse resp = MAPPER.readValue(fixture("responses_response.json"),
+                ResponsesResponse.class);
+        assertEquals("resp-abc123", resp.id);
+        assertEquals(1, resp.choices.size());
+        assertEquals("2 + 2 equals 4.", resp.choices.get(0).message.content);
+        assertNotNull(resp.usage);
+        assertEquals(18, resp.usage.totalTokens);
+    }
+
+    @Test
+    void responsesResponseWithReasoning() throws Exception {
+        ResponsesResponse resp = MAPPER.readValue(fixture("responses_response_with_reasoning.json"),
+                ResponsesResponse.class);
+        ResponsesResponse.ResponsesMessage msg = resp.choices.get(0).message;
+        assertNotNull(msg.reasoning);
+        assertEquals("I considered Turing's proof by contradiction.", msg.reasoning.summary);
+        assertNull(msg.reasoning.encryptedContent);
     }
 
     // -----------------------------------------------------------------------
