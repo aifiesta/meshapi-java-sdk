@@ -37,8 +37,7 @@ public class ResponsesResource {
      * }</pre>
      */
     public ResponsesResponse create(ResponsesRequest params) {
-        params.setStream(false);
-        return http.post("/v1/responses", params, ResponsesResponse.class);
+        return http.post("/v1/responses", params.withStream(false), ResponsesResponse.class);
     }
 
     /**
@@ -61,7 +60,6 @@ public class ResponsesResource {
      * }</pre>
      */
     public Iterator<ChatCompletionChunk> stream(ResponsesRequest params) {
-        params.setStream(true);
-        return http.stream("/v1/responses", params);
+        return http.stream("/v1/responses", params.withStream(true));
     }
 }

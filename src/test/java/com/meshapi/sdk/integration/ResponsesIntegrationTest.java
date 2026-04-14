@@ -10,6 +10,8 @@ import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
+import org.junit.jupiter.api.Assumptions;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("integration")
@@ -20,7 +22,8 @@ class ResponsesIntegrationTest {
     @BeforeEach
     void setUp() {
         String baseUrl = System.getenv().getOrDefault("MESHAPI_BASE_URL", "http://localhost:8000");
-        String token = System.getenv().getOrDefault("MESHAPI_TOKEN", "rsk_01KN96KQWDPF2X1E9CP8567JY4");
+        String token = System.getenv("MESHAPI_TOKEN");
+        Assumptions.assumeTrue(token != null, "MESHAPI_TOKEN environment variable is not set; skipping integration tests");
         client = MeshAPI.builder().baseUrl(baseUrl).token(token).build();
     }
 

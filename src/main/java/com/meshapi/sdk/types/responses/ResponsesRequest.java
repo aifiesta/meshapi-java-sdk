@@ -30,8 +30,29 @@ public class ResponsesRequest {
 
     private ResponsesRequest() {}
 
-    /** Called by ResponsesResource before sending — do not call directly. */
-    public void setStream(boolean stream) { this.stream = stream; }
+    /**
+     * Returns a shallow copy of this request with the {@code stream} field overridden.
+     * Used internally by {@link com.meshapi.sdk.resources.ResponsesResource} so that
+     * the caller's original object is never mutated.
+     */
+    ResponsesRequest withStream(boolean stream) {
+        ResponsesRequest copy = new ResponsesRequest();
+        copy.input = this.input;
+        copy.model = this.model;
+        copy.stream = stream;
+        copy.sessionId = this.sessionId;
+        copy.maxOutputTokens = this.maxOutputTokens;
+        copy.temperature = this.temperature;
+        copy.topP = this.topP;
+        copy.seed = this.seed;
+        copy.reasoning = this.reasoning;
+        copy.tools = this.tools;
+        copy.toolChoice = this.toolChoice;
+        copy.responseFormat = this.responseFormat;
+        copy.plugins = this.plugins;
+        copy.user = this.user;
+        return copy;
+    }
 
     public static Builder builder() { return new Builder(); }
 
@@ -69,6 +90,7 @@ public class ResponsesRequest {
         public Builder tools(List<Object> tools)     { req.tools = tools; return this; }
         public Builder toolChoice(Object tc)         { req.toolChoice = tc; return this; }
         public Builder responseFormat(Object rf)     { req.responseFormat = rf; return this; }
+        public Builder plugins(List<Object> plugins) { req.plugins = plugins; return this; }
         public Builder user(String user)             { req.user = user; return this; }
 
         public ResponsesRequest build() { return req; }
