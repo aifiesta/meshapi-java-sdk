@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshapi.sdk.MeshAPIError;
 import com.meshapi.sdk.MeshAPI;
 import com.meshapi.sdk.types.chat.ChatCompletionChunk;
-
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -93,7 +92,6 @@ public class HttpClient {
                     .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                     .build();
 
-            // Streaming: no retry
             HttpResponse<java.io.InputStream> response =
                     javaClient.send(req, HttpResponse.BodyHandlers.ofInputStream());
 
@@ -108,6 +106,57 @@ public class HttpClient {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("stream request failed: " + e.getMessage(), e);
+        }
+    }
+
+    public <T> Iterator<T> streamJson(String path, Object body, Class<T> valueType) {
+        try {
+            String json = mapper.writeValueAsString(body);
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + path))
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .header("Authorization", "Bearer " + token)
+                    .header("Content-Type", "application/json")
+                    .header("Accept", "text/event-stream")
+                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
+                    .build();
+
+            // Streaming: no retry
+            HttpResponse<java.io.InputStream> response =
+                    javaClient.send(req, HttpResponse.BodyHandlers.ofInputStream());
+
+            if (response.statusCode() >= 400) {
+                String errorBody = new String(response.body().readAllBytes());
+                HttpResponse<String> errResp = toStringResponse(response, errorBody);
+                throw MeshAPIError.fromResponse(errResp);
+            }
+
+            return new JsonSseParser<>(response.body(), valueType);
+        } catch (MeshAPIError e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("stream request failed: " + e.getMessage(), e);
+        }
+    }
+
+    public byte[] getBytes(String path) {
+        HttpRequest req = HttpRequest.newBuilder()
+                .uri(URI.create(baseUrl + path))
+                .GET()
+                .header("Authorization", "Bearer " + token)
+                .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
+                .build();
+        try {
+            HttpResponse<byte[]> response = javaClient.send(req, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() >= 400) {
+                HttpResponse<String> errResp = toStringResponse(response, new String(response.body()));
+                throw MeshAPIError.fromResponse(errResp);
+            }
+            return response.body();
+        } catch (MeshAPIError e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("GET bytes failed: " + e.getMessage(), e);
         }
     }
 

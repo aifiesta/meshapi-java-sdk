@@ -11,6 +11,7 @@ public class TemplateSummary {
     @JsonProperty("id") public String id;
     @JsonProperty("name") public String name;
     @JsonProperty("owner") public String owner;
+    @JsonProperty("is_global") public boolean isGlobal;
     @JsonProperty("description") public String description;
     @JsonProperty("system") public String system;
     @JsonProperty("messages") public List<Map<String, Object>> messages;

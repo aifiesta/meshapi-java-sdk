@@ -28,6 +28,11 @@ public class ChatCompletionRequest {
     @JsonProperty("transforms") private List<String> transforms;
     @JsonProperty("models") private List<String> models;
     @JsonProperty("user") private String user;
+    @JsonProperty("modality") private String modality;
+    @JsonProperty("image") private Map<String, Object> image;
+    @JsonProperty("async_mode") private Boolean asyncMode;
+    @JsonProperty("modalities") private List<String> modalities;
+    @JsonProperty("audio") private Map<String, Object> audio;
 
     private ChatCompletionRequest() {}
 
@@ -56,6 +61,11 @@ public class ChatCompletionRequest {
         public Builder seed(int seed) { req.seed = seed; return this; }
         public Builder toolChoice(Object tc) { req.toolChoice = tc; return this; }
         public Builder user(String user) { req.user = user; return this; }
+        public Builder modality(String modality) { req.modality = modality; return this; }
+        public Builder image(Map<String, Object> image) { req.image = image; return this; }
+        public Builder asyncMode(boolean asyncMode) { req.asyncMode = asyncMode; return this; }
+        public Builder modalities(List<String> modalities) { req.modalities = modalities; return this; }
+        public Builder audio(Map<String, Object> audio) { req.audio = audio; return this; }
 
         public Builder addMessage(ChatMessage msg) {
             messages.add(msg);

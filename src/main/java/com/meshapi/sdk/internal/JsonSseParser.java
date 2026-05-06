@@ -3,7 +3,6 @@ package com.meshapi.sdk.internal;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshapi.sdk.MeshAPIError;
-import com.meshapi.sdk.types.chat.ChatCompletionChunk;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -12,21 +11,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-/**
- * Parses a Server-Sent Events stream into ChatCompletionChunk objects.
- */
-public class SseParser implements Iterator<ChatCompletionChunk>, AutoCloseable {
-
+public class JsonSseParser<T> implements Iterator<T>, AutoCloseable {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final BufferedReader reader;
-    private ChatCompletionChunk nextChunk = null;
+    private final Class<T> valueType;
+    private T nextChunk = null;
     private boolean done = false;
     private MeshAPIError pendingError = null;
 
-    public SseParser(InputStream inputStream) {
-        this.reader = new BufferedReader(
-                new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+    public JsonSseParser(InputStream inputStream, Class<T> valueType) {
+        this.reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        this.valueType = valueType;
         advance();
     }
 
@@ -36,7 +32,7 @@ public class SseParser implements Iterator<ChatCompletionChunk>, AutoCloseable {
     }
 
     @Override
-    public ChatCompletionChunk next() {
+    public T next() {
         if (pendingError != null) {
             MeshAPIError err = pendingError;
             pendingError = null;
@@ -46,7 +42,7 @@ public class SseParser implements Iterator<ChatCompletionChunk>, AutoCloseable {
         if (!hasNext()) {
             throw new NoSuchElementException("SSE stream exhausted");
         }
-        ChatCompletionChunk current = nextChunk;
+        T current = nextChunk;
         nextChunk = null;
         advance();
         return current;
@@ -63,73 +59,45 @@ public class SseParser implements Iterator<ChatCompletionChunk>, AutoCloseable {
             String line;
             while ((line = reader.readLine()) != null) {
                 if (line.isEmpty()) {
-                    String frame = frameBuilder.toString();
+                    T parsed = parseFrame(frameBuilder.toString(), valueType);
                     frameBuilder.setLength(0);
-                    ParseResult result = parseFrame(frame);
-                    if (result == null) {
-                        continue;
-                    }
-                    if (result.done) {
-                        done = true;
+                    if (parsed != null) {
+                        nextChunk = parsed;
                         return;
                     }
-                    if (result.error != null) {
-                        pendingError = result.error;
-                        return;
-                    }
-                    if (result.chunk != null) {
-                        nextChunk = result.chunk;
-                        return;
-                    }
-                } else {
-                    frameBuilder.append(line).append('\n');
+                    continue;
                 }
+                frameBuilder.append(line).append('\n');
             }
             done = true;
+        } catch (MeshAPIError e) {
+            pendingError = e;
         } catch (Exception e) {
-            if (!done) {
-                pendingError = MeshAPIError.streamInterrupted(e.getMessage());
-            }
-            done = true;
+            pendingError = MeshAPIError.streamInterrupted(e.getMessage());
         }
     }
 
-    public static final class ParseResult {
-        public ChatCompletionChunk chunk;
-        public MeshAPIError error;
-        public boolean done;
-    }
-
-    public static ParseResult parseFrame(String frame) {
+    public static <T> T parseFrame(String frame, Class<T> valueType) {
         String dataLine = null;
         for (String line : frame.split("\n")) {
             if (line.startsWith("data: ")) {
                 dataLine = line.substring("data: ".length()).strip();
             }
         }
-        if (dataLine == null || dataLine.isEmpty()) {
+        if (dataLine == null || dataLine.isEmpty() || "[DONE]".equals(dataLine)) {
             return null;
         }
-        if ("[DONE]".equals(dataLine)) {
-            ParseResult r = new ParseResult();
-            r.done = true;
-            return r;
-        }
-
         try {
             JsonNode root = MAPPER.readTree(dataLine);
             JsonNode errorNode = root.path("error");
             if (!errorNode.isMissingNode()) {
                 String code = errorNode.path("code").asText("upstream_error");
                 String msg = errorNode.path("message").asText("upstream error");
-                ParseResult r = new ParseResult();
-                r.error = MeshAPIError.fromStreamFrame(code, msg);
-                return r;
+                throw MeshAPIError.fromStreamFrame(code, msg);
             }
-
-            ParseResult r = new ParseResult();
-            r.chunk = MAPPER.treeToValue(root, ChatCompletionChunk.class);
-            return r;
+            return MAPPER.treeToValue(root, valueType);
+        } catch (MeshAPIError e) {
+            throw e;
         } catch (Exception e) {
             return null;
         }
