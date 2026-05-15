@@ -16,6 +16,14 @@ public abstract class LiveTestBase {
             envOrShared("MESHAPI_TOKEN", "rsk_01KN96KQWDPF2X1E9CP8567JY4");
     protected static final String MODEL =
             envOrShared("MESHAPI_MODEL", "openai/gpt-4o-mini");
+    protected static final String SECOND_MODEL = resolveSecondModel();
+
+    private static String resolveSecondModel() {
+        String fallback = MODEL.equals("anthropic/claude-haiku-4-5")
+                ? "openai/gpt-4o-mini"
+                : "anthropic/claude-haiku-4-5";
+        return envOrShared("MESHAPI_SECOND_MODEL", fallback);
+    }
 
     protected static String envOrShared(String key, String fallback) {
         String fromEnv = System.getenv(key);
