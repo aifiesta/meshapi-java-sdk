@@ -47,13 +47,46 @@ while (it.hasNext()) {
 // Models
 List<ModelInfo> models = client.models().list(null);
 List<ModelInfo> free   = client.models().free();
-List<ModelInfo> paid   = client.models().paid();
 
 // Templates
 TemplateSummary tmpl = client.templates().create(
     CreateTemplateRequest.builder().name("my-tpl").system("You are helpful.").build()
 );
 client.templates().delete(tmpl.id);
+
+// Responses (Reasoning)
+ResponsesResponse reason = client.responses().create(
+    ResponsesRequest.builder()
+        .model("openai/o3-mini")
+        .input("Why is the sky blue?")
+        .build()
+);
+
+// Embeddings
+EmbeddingsResponse emb = client.embeddings().create(
+    EmbeddingsRequest.builder()
+        .model("openai/text-embedding-3-small")
+        .input(List.of("The quick brown fox"))
+        .build()
+);
+
+// Compare (Multi-model)
+Iterator<CompareStreamEvent> compare = client.compare().stream(
+    CompareRequest.builder()
+        .addModel("openai/gpt-4o-mini")
+        .addModel("anthropic/claude-3-haiku")
+        .addMessage(ChatMessage.user("Hi!"))
+        .build()
+);
+
+// Files & Batches
+FileObject file = client.files().create("data.jsonl", myBytes, "batch");
+BatchObject batch = client.batches().create(
+    CreateBatchRequest.builder()
+        .inputFileId(file.id)
+        .endpoint("/v1/chat/completions")
+        .build()
+);
 ```
 
 ## Error Handling
