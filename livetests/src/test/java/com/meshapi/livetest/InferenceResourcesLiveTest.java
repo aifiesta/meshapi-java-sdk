@@ -50,7 +50,7 @@ class InferenceResourcesLiveTest extends LiveTestBase {
     void embeddings_create() {
         MeshAPI client = newClient();
         EmbeddingsRequest req = new EmbeddingsRequest();
-        req.model = MODEL;
+        req.model = envOrShared("MESHAPI_EMBEDDINGS_MODEL", "openai/text-embedding-3-small");
         req.input = "MeshAPI embeddings smoke test";
 
         EmbeddingsResponse resp = client.embeddings().create(req);

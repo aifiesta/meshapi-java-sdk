@@ -38,7 +38,7 @@ class FeatureMatrixLiveTest extends LiveTestBase {
         System.out.println("[SKIP] responses stable options -> reasoning.effort not supported by default model");
 
         EmbeddingsRequest embeddingsRequest = new EmbeddingsRequest();
-        embeddingsRequest.model = envOrShared("MESHAPI_EMBEDDINGS_MODEL", MODEL);
+        embeddingsRequest.model = envOrShared("MESHAPI_EMBEDDINGS_MODEL", "openai/text-embedding-3-small");
         embeddingsRequest.input = List.of("alpha", "beta");
         embeddingsRequest.user = "java-feature-matrix";
         EmbeddingsResponse embeddings = client.embeddings().create(embeddingsRequest);
