@@ -11,6 +11,7 @@ public class ImageGenerationRequest {
     @JsonProperty("size") public String size;
     @JsonProperty("quality") public String quality;
     @JsonProperty("response_format") public String responseFormat;
+    @JsonProperty("output_format") public String outputFormat;
     @JsonProperty("stream") public Boolean stream;
 
     private ImageGenerationRequest() {}
@@ -25,7 +26,8 @@ public class ImageGenerationRequest {
         public Builder n(Integer n) { req.n = n; return this; }
         public Builder size(String size) { req.size = size; return this; }
         public Builder quality(String quality) { req.quality = quality; return this; }
-        public Builder responseFormat(String format) { req.responseFormat = format; return this; }
+        public Builder responseFormat(String responseFormat) { req.responseFormat = responseFormat; return this; }
+        public Builder outputFormat(String outputFormat) { req.outputFormat = outputFormat; return this; }
         public Builder stream(Boolean stream) { req.stream = stream; return this; }
 
         public ImageGenerationRequest build() {

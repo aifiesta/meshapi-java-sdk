@@ -73,8 +73,12 @@ EmbeddingsResponse emb = client.embeddings().create(
 // Image Generation
 ImageGenerationResponse img = client.images().generate(
     ImageGenerationRequest.builder()
-        .model("openai/dall-e-3")
-        .prompt("A cute baby sea otter")
+        .model("openai/gpt-image-1")
+        .prompt("A watercolor of a fox in a snowy forest")
+        .n(1)
+        .size("1024x1024")
+        .quality("high")
+        .outputFormat("webp")
         .build()
 );
 
