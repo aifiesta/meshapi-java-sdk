@@ -70,6 +70,14 @@ EmbeddingsResponse emb = client.embeddings().create(
         .build()
 );
 
+// Image Generation
+ImageGenerationResponse img = client.images().generate(
+    ImageGenerationRequest.builder()
+        .model("openai/dall-e-3")
+        .prompt("A cute baby sea otter")
+        .build()
+);
+
 // Compare (Multi-model)
 Iterator<CompareStreamEvent> compare = client.compare().stream(
     CompareRequest.builder()

@@ -10,6 +10,7 @@ import com.meshapi.sdk.resources.BatchesResource;
 import com.meshapi.sdk.resources.ModelsResource;
 import com.meshapi.sdk.resources.ResponsesResource;
 import com.meshapi.sdk.resources.TemplatesResource;
+import com.meshapi.sdk.resources.ImagesResource;
 
 import java.time.Duration;
 
@@ -46,6 +47,7 @@ public class MeshAPI {
     private final BatchesResource batches;
     private final ModelsResource models;
     private final TemplatesResource templates;
+    private final ImagesResource images;
 
     private MeshAPI(Builder builder) {
         ObjectMapper mapper = new ObjectMapper();
@@ -65,6 +67,7 @@ public class MeshAPI {
         this.batches = new BatchesResource(http);
         this.models = new ModelsResource(http);
         this.templates = new TemplatesResource(http);
+        this.images = new ImagesResource(http);
     }
 
     public ChatResource chat() { return chat; }
@@ -75,6 +78,7 @@ public class MeshAPI {
     public BatchesResource batches() { return batches; }
     public ModelsResource models() { return models; }
     public TemplatesResource templates() { return templates; }
+    public ImagesResource images() { return images; }
 
     public static Builder builder() { return new Builder(); }
 

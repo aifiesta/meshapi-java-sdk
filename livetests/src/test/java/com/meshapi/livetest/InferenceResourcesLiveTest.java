@@ -154,4 +154,28 @@ class InferenceResourcesLiveTest extends LiveTestBase {
         client.files().delete(file.id);
         System.out.println("[PASS] files.delete -> 204 No Content");
     }
+
+    @Test
+    void images_generate() {
+        MeshAPI client = newClient();
+        String imageGenModel = envOrShared("MESHAPI_IMAGE_GEN_MODEL", "");
+        if (imageGenModel.isEmpty()) {
+            System.out.println("[SKIP] images.generate -> MESHAPI_IMAGE_GEN_MODEL not set");
+            return;
+        }
+
+        com.meshapi.sdk.types.images.ImageGenerationRequest req = new com.meshapi.sdk.types.images.ImageGenerationRequest();
+        req.model = imageGenModel;
+        req.prompt = "A small blue square on a white background.";
+        req.n = 1;
+        req.size = "1024x1024";
+
+        com.meshapi.sdk.types.images.ImageGenerationResponse resp = client.images().generate(req);
+        assertNotNull(resp.created);
+        assertNotNull(resp.data);
+        assertFalse(resp.data.isEmpty());
+        assertTrue(resp.data.get(0).b64Json != null || resp.data.get(0).url != null, "expected image data");
+        System.out.printf("[PASS] images.generate -> created=%d images=%d%n", resp.created, resp.data.size());
+    }
 }
+
