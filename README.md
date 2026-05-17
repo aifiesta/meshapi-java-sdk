@@ -82,6 +82,26 @@ ImageGenerationResponse img = client.images().generate(
         .build()
 );
 
+// Image Generation — streaming
+Iterator<ImageGenerationChunk> imgStream = client.images().stream(
+    ImageGenerationRequest.builder()
+        .model("openai/gpt-image-1")
+        .prompt("A watercolor of a fox in a snowy forest")
+        .n(1)
+        .size("1024x1024")
+        .quality("high")
+        .outputFormat("webp")
+        .build()
+);
+while (imgStream.hasNext()) {
+    ImageGenerationChunk chunk = imgStream.next();
+    if ("processing".equals(chunk.status)) {
+        System.out.println("Generating...");
+    } else if (chunk.data != null && !chunk.data.isEmpty()) {
+        System.out.println("Done: " + chunk.data.get(0).url);
+    }
+}
+
 // Compare (Multi-model)
 Iterator<CompareStreamEvent> compare = client.compare().stream(
     CompareRequest.builder()
