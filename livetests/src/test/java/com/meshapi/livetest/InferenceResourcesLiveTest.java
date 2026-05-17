@@ -164,11 +164,13 @@ class InferenceResourcesLiveTest extends LiveTestBase {
             return;
         }
 
-        com.meshapi.sdk.types.images.ImageGenerationRequest req = new com.meshapi.sdk.types.images.ImageGenerationRequest();
-        req.model = imageGenModel;
-        req.prompt = "A small blue square on a white background.";
-        req.n = 1;
-        req.size = "1024x1024";
+        com.meshapi.sdk.types.images.ImageGenerationRequest req = com.meshapi.sdk.types.images.ImageGenerationRequest.builder()
+                .model(imageGenModel)
+                .prompt("A small blue square on a white background.")
+                .n(1)
+                .size("1024x1024")
+                .build();
+
 
         com.meshapi.sdk.types.images.ImageGenerationResponse resp = client.images().generate(req);
         assertNotNull(resp.created);
