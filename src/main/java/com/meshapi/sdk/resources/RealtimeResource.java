@@ -155,13 +155,24 @@ public class RealtimeResource {
             return null;
         }
 
+        private final java.util.ArrayList<byte[]> binaryAccumulator = new java.util.ArrayList<>();
+
         @Override
         public CompletionStage<?> onBinary(WebSocket ws, ByteBuffer data, boolean last) {
+            byte[] chunk = new byte[data.remaining()];
+            data.get(chunk);
+            binaryAccumulator.add(chunk);
             ws.request(1);
-            if (!last) return null; // simplified: assumes single-frame binary messages
+            if (!last) return null; // accumulate fragments
 
-            byte[] bytes = new byte[data.remaining()];
-            data.get(bytes);
+            int totalLen = binaryAccumulator.stream().mapToInt(b -> b.length).sum();
+            byte[] bytes = new byte[totalLen];
+            int pos = 0;
+            for (byte[] part : binaryAccumulator) {
+                System.arraycopy(part, 0, bytes, pos, part.length);
+                pos += part.length;
+            }
+            binaryAccumulator.clear();
             listener.onMessage(session, RealtimeMessage.audio(bytes));
             return null;
         }
