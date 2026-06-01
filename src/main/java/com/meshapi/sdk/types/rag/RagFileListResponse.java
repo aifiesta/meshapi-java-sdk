@@ -1,0 +1,14 @@
+package com.meshapi.sdk.types.rag;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import java.util.List;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class RagFileListResponse {
+    @JsonProperty("files") public List<RagFileStatus> files;
+    @JsonProperty("total") public int total;
+    @JsonProperty("limit") public int limit;
+    @JsonProperty("offset") public int offset;
+}
