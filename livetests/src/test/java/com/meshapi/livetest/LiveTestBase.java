@@ -19,9 +19,9 @@ public abstract class LiveTestBase {
     protected static final String SECOND_MODEL = resolveSecondModel();
 
     private static String resolveSecondModel() {
-        String fallback = MODEL.equals("anthropic/claude-haiku-4-5")
+        String fallback = MODEL.equals("anthropic/claude-haiku-4.5")
                 ? "openai/gpt-4o-mini"
-                : "anthropic/claude-haiku-4-5";
+                : "anthropic/claude-haiku-4.5";
         return envOrShared("MESHAPI_SECOND_MODEL", fallback);
     }
 
@@ -88,4 +88,6 @@ public abstract class LiveTestBase {
         String value = envOrShared(key, "");
         return value != null && !value.isBlank();
     }
+
+    protected static final String REALTIME_MODEL = envOrShared("MESHAPI_REALTIME_MODEL", "openai/gpt-realtime-mini");
 }
