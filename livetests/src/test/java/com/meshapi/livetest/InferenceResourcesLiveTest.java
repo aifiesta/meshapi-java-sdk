@@ -5,8 +5,6 @@ import com.meshapi.sdk.types.batch.BatchListResponse;
 import com.meshapi.sdk.types.batch.BatchObject;
 import com.meshapi.sdk.types.batch.BatchRequestItem;
 import com.meshapi.sdk.types.batch.CreateBatchRequest;
-import com.meshapi.sdk.types.batch.FileObject;
-import com.meshapi.sdk.types.batch.UploadBatchFileRequest;
 import com.meshapi.sdk.types.chat.ChatMessage;
 import com.meshapi.sdk.types.compare.CompareRequest;
 import com.meshapi.sdk.types.compare.CompareResponse;
@@ -17,7 +15,6 @@ import com.meshapi.sdk.types.responses.ResponsesResponse;
 import com.meshapi.sdk.types.responses.ResponsesStreamEvent;
 import org.junit.jupiter.api.Test;
 
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -26,11 +23,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class InferenceResourcesLiveTest extends LiveTestBase {
 
+    /** Not all models support the Batch API; this one is known to have batching enabled. */
+    private static final String BATCH_MODEL = "openai/gpt-5-nano";
+
     private static List<BatchRequestItem> batchRequests(String tag) {
         BatchRequestItem first = new BatchRequestItem();
         first.customId = tag + "-1";
         first.body = Map.of(
-                "model", MODEL,
+                "model", BATCH_MODEL,
                 "messages", List.of(Map.of("role", "user", "content", "Reply with the single word: hello")),
                 "max_tokens", 10
         );
@@ -38,7 +38,7 @@ class InferenceResourcesLiveTest extends LiveTestBase {
         BatchRequestItem second = new BatchRequestItem();
         second.customId = tag + "-2";
         second.body = Map.of(
-                "model", MODEL,
+                "model", BATCH_MODEL,
                 "messages", List.of(Map.of("role", "user", "content", "Reply with the single word: world")),
                 "max_tokens", 10
         );
@@ -115,33 +115,14 @@ class InferenceResourcesLiveTest extends LiveTestBase {
         System.out.println("[SKIP] compare.stream -> server-side concurrency issue");
     }
 
-    @org.junit.jupiter.api.Disabled("files/batches endpoint validation mismatch — needs API spec investigation")
     @Test
-    void files_and_batches_lifecycle() {
+    void batches_lifecycle() {
         MeshAPI client = newClient();
         String tag = uniqueName("java-batch");
 
-        UploadBatchFileRequest upload = new UploadBatchFileRequest();
-        upload.purpose = "batch";
-        upload.requests = batchRequests(tag);
-
-        FileObject file = client.files().upload(upload);
-        assertNotNull(file.id);
-        System.out.printf("[PASS] files.upload -> id=%s%n", file.id);
-
-        FileObject fetched = client.files().get(file.id);
-        assertEquals(file.id, fetched.id);
-        System.out.printf("[PASS] files.get -> status=%s bytes=%s%n", fetched.status, fetched.bytes);
-
-        byte[] content = client.files().content(file.id);
-        String text = new String(content, StandardCharsets.UTF_8);
-        assertTrue(text.contains(tag + "-1"), "expected uploaded file content to contain custom_id");
-        System.out.printf("[PASS] files.content -> %d bytes%n", content.length);
-
+        // Create batch with inline requests (no file upload step required)
         CreateBatchRequest batchReq = new CreateBatchRequest();
-        batchReq.inputFileId = file.id;
-        batchReq.endpoint = "/v1/chat/completions";
-        batchReq.completionWindow = "24h";
+        batchReq.requests = batchRequests(tag);
         batchReq.metadata = Map.of("suite", "java-livetest");
 
         BatchObject batch = client.batches().create(batchReq);
@@ -159,9 +140,6 @@ class InferenceResourcesLiveTest extends LiveTestBase {
         BatchObject cancelled = client.batches().cancel(batch.id);
         assertEquals(batch.id, cancelled.id);
         System.out.printf("[PASS] batches.cancel -> status=%s%n", cancelled.status);
-
-        client.files().delete(file.id);
-        System.out.println("[PASS] files.delete -> 204 No Content");
     }
 
     @Test

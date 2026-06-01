@@ -5,12 +5,12 @@ import com.meshapi.sdk.internal.HttpClient;
 import com.meshapi.sdk.resources.ChatResource;
 import com.meshapi.sdk.resources.CompareResource;
 import com.meshapi.sdk.resources.EmbeddingsResource;
-import com.meshapi.sdk.resources.FilesResource;
 import com.meshapi.sdk.resources.BatchesResource;
 import com.meshapi.sdk.resources.ModelsResource;
 import com.meshapi.sdk.resources.ResponsesResource;
 import com.meshapi.sdk.resources.TemplatesResource;
 import com.meshapi.sdk.resources.ImagesResource;
+import com.meshapi.sdk.resources.RagResource;
 
 import java.time.Duration;
 
@@ -43,11 +43,11 @@ public class MeshAPI {
     private final ResponsesResource responses;
     private final EmbeddingsResource embeddings;
     private final CompareResource compare;
-    private final FilesResource files;
     private final BatchesResource batches;
     private final ModelsResource models;
     private final TemplatesResource templates;
     private final ImagesResource images;
+    private final RagResource rag;
 
     private MeshAPI(Builder builder) {
         ObjectMapper mapper = new ObjectMapper();
@@ -63,22 +63,22 @@ public class MeshAPI {
         this.responses = new ResponsesResource(http);
         this.embeddings = new EmbeddingsResource(http);
         this.compare = new CompareResource(http);
-        this.files = new FilesResource(http);
         this.batches = new BatchesResource(http);
         this.models = new ModelsResource(http);
         this.templates = new TemplatesResource(http);
         this.images = new ImagesResource(http);
+        this.rag = new RagResource(http);
     }
 
     public ChatResource chat() { return chat; }
     public ResponsesResource responses() { return responses; }
     public EmbeddingsResource embeddings() { return embeddings; }
     public CompareResource compare() { return compare; }
-    public FilesResource files() { return files; }
     public BatchesResource batches() { return batches; }
     public ModelsResource models() { return models; }
     public TemplatesResource templates() { return templates; }
     public ImagesResource images() { return images; }
+    public RagResource rag() { return rag; }
 
     public static Builder builder() { return new Builder(); }
 
