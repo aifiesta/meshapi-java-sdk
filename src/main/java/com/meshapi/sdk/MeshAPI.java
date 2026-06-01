@@ -11,6 +11,7 @@ import com.meshapi.sdk.resources.ResponsesResource;
 import com.meshapi.sdk.resources.TemplatesResource;
 import com.meshapi.sdk.resources.ImagesResource;
 import com.meshapi.sdk.resources.RagResource;
+import com.meshapi.sdk.resources.RealtimeResource;
 
 import java.time.Duration;
 
@@ -48,11 +49,18 @@ public class MeshAPI {
     private final TemplatesResource templates;
     private final ImagesResource images;
     private final RagResource rag;
+    private final RealtimeResource realtime;
 
     private MeshAPI(Builder builder) {
         ObjectMapper mapper = new ObjectMapper();
+        java.net.http.HttpClient javaHttp = builder.javaHttpClient != null
+                ? builder.javaHttpClient
+                : java.net.http.HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofMillis(builder.timeoutMs))
+                        .version(java.net.http.HttpClient.Version.HTTP_1_1)
+                        .build();
         HttpClient http = new HttpClient(
-                builder.javaHttpClient,
+                javaHttp,
                 mapper,
                 builder.baseUrl,
                 builder.token,
@@ -68,6 +76,7 @@ public class MeshAPI {
         this.templates = new TemplatesResource(http);
         this.images = new ImagesResource(http);
         this.rag = new RagResource(http);
+        this.realtime = new RealtimeResource(javaHttp, mapper, builder.baseUrl, builder.token);
     }
 
     public ChatResource chat() { return chat; }
@@ -79,6 +88,7 @@ public class MeshAPI {
     public TemplatesResource templates() { return templates; }
     public ImagesResource images() { return images; }
     public RagResource rag() { return rag; }
+    public RealtimeResource realtime() { return realtime; }
 
     public static Builder builder() { return new Builder(); }
 
