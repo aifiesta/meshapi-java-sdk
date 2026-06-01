@@ -5,7 +5,6 @@ import com.meshapi.sdk.internal.HttpClient;
 import com.meshapi.sdk.resources.ChatResource;
 import com.meshapi.sdk.resources.CompareResource;
 import com.meshapi.sdk.resources.EmbeddingsResource;
-import com.meshapi.sdk.resources.FilesResource;
 import com.meshapi.sdk.resources.BatchesResource;
 import com.meshapi.sdk.resources.ModelsResource;
 import com.meshapi.sdk.resources.ResponsesResource;
@@ -44,7 +43,6 @@ public class MeshAPI {
     private final ResponsesResource responses;
     private final EmbeddingsResource embeddings;
     private final CompareResource compare;
-    private final FilesResource files;
     private final BatchesResource batches;
     private final ModelsResource models;
     private final TemplatesResource templates;
@@ -65,7 +63,6 @@ public class MeshAPI {
         this.responses = new ResponsesResource(http);
         this.embeddings = new EmbeddingsResource(http);
         this.compare = new CompareResource(http);
-        this.files = new FilesResource(http);
         this.batches = new BatchesResource(http);
         this.models = new ModelsResource(http);
         this.templates = new TemplatesResource(http);
@@ -77,7 +74,6 @@ public class MeshAPI {
     public ResponsesResource responses() { return responses; }
     public EmbeddingsResource embeddings() { return embeddings; }
     public CompareResource compare() { return compare; }
-    public FilesResource files() { return files; }
     public BatchesResource batches() { return batches; }
     public ModelsResource models() { return models; }
     public TemplatesResource templates() { return templates; }
