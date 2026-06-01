@@ -118,8 +118,11 @@ public class RealtimeResource {
         public void onOpen(WebSocket ws) {
             session = new RealtimeSession(ws, mapper);
             sessionFuture.complete(session);
-            listener.onOpen(session);
-            ws.request(1);
+            try {
+                listener.onOpen(session);
+            } finally {
+                ws.request(1);
+            }
         }
 
         @Override
