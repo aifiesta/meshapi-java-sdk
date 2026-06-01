@@ -105,7 +105,7 @@ class RealtimeLiveTest extends LiveTestBase {
 
             session.send(Map.of(
                     "type", "session.update",
-                    "session", Map.of("instructions", "You are a helpful assistant.")
+                    "session", Map.of("type", "realtime", "instructions", "You are a helpful assistant.")
             )).get(5, TimeUnit.SECONDS);
 
             assertTrue(ackLatch.await(20, TimeUnit.SECONDS), "session.updated not received");
