@@ -110,6 +110,9 @@ class RagLiveTest extends LiveTestBase {
                 uploadStatus = s;
                 break;
             }
+            if ("failed".equals(s.uploadStatus)) {
+                fail("upload failed for " + upload.fileId + ": error_code=" + s.lastErrorCode);
+            }
             Thread.sleep(2_000);
         }
         assertNotNull(uploadStatus, "upload_status did not reach 'ready' within 30s");
