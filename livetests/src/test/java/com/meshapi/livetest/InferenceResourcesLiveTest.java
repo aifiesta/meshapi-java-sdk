@@ -23,11 +23,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class InferenceResourcesLiveTest extends LiveTestBase {
 
+    /** Not all models support the Batch API; this one is known to have batching enabled. */
+    private static final String BATCH_MODEL = "openai/gpt-5-nano";
+
     private static List<BatchRequestItem> batchRequests(String tag) {
         BatchRequestItem first = new BatchRequestItem();
         first.customId = tag + "-1";
         first.body = Map.of(
-                "model", MODEL,
+                "model", BATCH_MODEL,
                 "messages", List.of(Map.of("role", "user", "content", "Reply with the single word: hello")),
                 "max_tokens", 10
         );
@@ -35,7 +38,7 @@ class InferenceResourcesLiveTest extends LiveTestBase {
         BatchRequestItem second = new BatchRequestItem();
         second.customId = tag + "-2";
         second.body = Map.of(
-                "model", MODEL,
+                "model", BATCH_MODEL,
                 "messages", List.of(Map.of("role", "user", "content", "Reply with the single word: world")),
                 "max_tokens", 10
         );
