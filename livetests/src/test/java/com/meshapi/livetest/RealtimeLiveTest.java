@@ -24,14 +24,6 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class RealtimeLiveTest extends LiveTestBase {
 
-    @BeforeEach
-    void requireRealtimeModel() {
-        org.junit.jupiter.api.Assumptions.assumeTrue(
-                !REALTIME_MODEL.isBlank(),
-                "MESHAPI_REALTIME_MODEL not set — skipping realtime live tests"
-        );
-    }
-
     // -------------------------------------------------------------------------
     // Connect and close
     // -------------------------------------------------------------------------

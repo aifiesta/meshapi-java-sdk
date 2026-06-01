@@ -89,5 +89,5 @@ public abstract class LiveTestBase {
         return value != null && !value.isBlank();
     }
 
-    protected static final String REALTIME_MODEL = envOrShared("MESHAPI_REALTIME_MODEL", "");
+    protected static final String REALTIME_MODEL = envOrShared("MESHAPI_REALTIME_MODEL", "openai/gpt-realtime-mini");
 }
