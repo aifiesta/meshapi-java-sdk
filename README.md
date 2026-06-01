@@ -101,7 +101,7 @@ while (stream.hasNext()) { ... }
 Iterator<CompareStreamEvent> compare = client.compare().stream(
     CompareRequest.builder()
         .addModel("openai/gpt-4o-mini")
-        .addModel("anthropic/claude-haiku-4-5")
+        .addModel("anthropic/claude-haiku-4.5")
         .addMessage(ChatMessage.user("Hi!"))
         .build()
 );
