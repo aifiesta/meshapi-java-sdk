@@ -67,15 +67,12 @@ public class RealtimeResource {
      */
     public CompletableFuture<RealtimeSession> connect(String model, RealtimeListener listener) {
         String wsUrl = buildWsUrl(model);
-        // Auth subprotocol: "openai-realtime, Bearer <token>" — the backend's _extract_api_key()
-        // splits on comma and finds the entry starting with "Bearer ".
-        String subprotocol = "openai-realtime, Bearer " + token;
 
         CompletableFuture<RealtimeSession> sessionFuture = new CompletableFuture<>();
 
         httpClient.newWebSocketBuilder()
                 .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
-                .subprotocols("openai-realtime", "Bearer " + token)
+                .subprotocols("openai-realtime")
                 .buildAsync(URI.create(wsUrl), new WebSocketListenerAdapter(listener, mapper, sessionFuture))
                 .exceptionally(ex -> {
                     sessionFuture.completeExceptionally(ex);
@@ -93,7 +90,8 @@ public class RealtimeResource {
         String base = baseUrl
                 .replace("https://", "wss://")
                 .replace("http://",  "ws://");
-        return base + "/v1/realtime?model=" + URLEncoder.encode(model, StandardCharsets.UTF_8);
+        return base + "/v1/realtime?model=" + URLEncoder.encode(model, StandardCharsets.UTF_8)
+                + "&api_key=" + URLEncoder.encode(token, StandardCharsets.UTF_8);
     }
 
     /**
