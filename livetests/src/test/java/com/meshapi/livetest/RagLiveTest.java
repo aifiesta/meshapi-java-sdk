@@ -61,6 +61,23 @@ class RagLiveTest extends LiveTestBase {
         fail("embedding did not reach 'ready' within " + MAX_EMBED_WAIT_MS + "ms for " + fileId);
     }
 
+    /**
+     * Paginate through all RAG files until fileId is found or the list is exhausted.
+     * Returns true if found.
+     */
+    private static boolean findFileInList(MeshAPI client, String fileId) {
+        final int pageSize = 50;
+        int offset = 0;
+        while (true) {
+            RagFileListResponse page = client.rag().list(pageSize, offset);
+            for (RagFileStatus f : page.files) {
+                if (fileId.equals(f.fileId)) return true;
+            }
+            offset += page.files.size();
+            if (offset >= page.total) return false;
+        }
+    }
+
     @Test
     void uploadEmbedSearch() throws IOException, InterruptedException {
         MeshAPI client = newClient();
@@ -76,6 +93,9 @@ class RagLiveTest extends LiveTestBase {
         assertNotNull(upload.fileId, "expected file_id");
         assertNotNull(upload.signedUrl, "expected signed_url");
         System.out.printf("[PASS] rag.initUpload → file_id=%s%n", upload.fileId);
+
+        // Note: the RAG API has no DELETE endpoint, so uploaded files cannot be
+        // cleaned up programmatically. Each test run leaves one file in the account.
 
         // ── Step 2: PUT file content to signed URL ──
         putFile(upload.signedUrl, MIME_TYPE, RAG_TEST_CONTENT);
@@ -108,12 +128,9 @@ class RagLiveTest extends LiveTestBase {
         pollEmbedding(client, upload.fileId);
         System.out.printf("[PASS] embedding complete for %s%n", upload.fileId);
 
-        // ── Step 6: List — file must appear ──
-        RagFileListResponse fileList = client.rag().list(50, null);
-        final String fId = upload.fileId;
-        assertTrue(fileList.files.stream().anyMatch(f -> fId.equals(f.fileId)),
-                "uploaded file not found in list");
-        System.out.printf("[PASS] rag.list → total=%d, uploaded file present%n", fileList.total);
+        // ── Step 6: List — paginate until file is found or all pages exhausted ──
+        assertTrue(findFileInList(client, upload.fileId), "uploaded file not found in list");
+        System.out.println("[PASS] rag.list → uploaded file present");
 
         // ── Step 7: Search ──
         SearchResponse searchResp = client.rag().search(

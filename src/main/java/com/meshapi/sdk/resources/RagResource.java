@@ -12,6 +12,8 @@ import com.meshapi.sdk.types.rag.SearchResponse;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Map;
@@ -89,7 +91,8 @@ public class RagResource {
 
     /** Get the status of a single RAG file. */
     public RagFileStatus get(String fileId) {
-        return http.get("/v1/files/" + fileId, RagFileStatus.class);
+        String encoded = URLEncoder.encode(fileId, StandardCharsets.UTF_8).replace("+", "%20");
+        return http.get("/v1/files/" + encoded, RagFileStatus.class);
     }
 
     /** Enqueue embedding jobs for one or more files. */
