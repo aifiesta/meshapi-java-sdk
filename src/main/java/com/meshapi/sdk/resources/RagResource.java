@@ -10,6 +10,12 @@ import com.meshapi.sdk.types.rag.RagFileStatus;
 import com.meshapi.sdk.types.rag.SearchRequest;
 import com.meshapi.sdk.types.rag.SearchResponse;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.util.Map;
+
 public class RagResource {
 
     private final HttpClient http;
@@ -21,6 +27,50 @@ public class RagResource {
     /** Initialise a RAG file upload and return a signed URL for the file content. */
     public InitUploadResponse initUpload(InitUploadRequest params) {
         return http.post("/v1/files", params, InitUploadResponse.class);
+    }
+
+    /**
+     * Convenience wrapper: calls {@link #initUpload} then PUTs {@code content} to
+     * the returned signed URL in one step. Returns the same {@link InitUploadResponse}
+     * so the caller has the {@code fileId}.
+     *
+     * @param fileName file name (e.g. "report.pdf")
+     * @param mimeType MIME type (e.g. "application/pdf")
+     * @param content  raw file bytes
+     * @param embed    whether to auto-trigger embedding after upload (nullable = server default)
+     * @param metadata optional key/value metadata
+     */
+    public InitUploadResponse uploadFile(
+            String fileName,
+            String mimeType,
+            byte[] content,
+            Boolean embed,
+            Map<String, Object> metadata) {
+
+        InitUploadRequest req = InitUploadRequest.builder()
+                .fileName(fileName)
+                .mimeType(mimeType)
+                .embed(embed)
+                .metadata(metadata)
+                .build();
+        InitUploadResponse upload = initUpload(req);
+
+        try {
+            java.net.http.HttpClient jdkClient = java.net.http.HttpClient.newHttpClient();
+            HttpRequest putReq = HttpRequest.newBuilder()
+                    .uri(URI.create(upload.signedUrl))
+                    .header("Content-Type", mimeType)
+                    .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
+                    .build();
+            HttpResponse<Void> putResp = jdkClient.send(putReq, HttpResponse.BodyHandlers.discarding());
+            if (putResp.statusCode() >= 400) {
+                throw new RuntimeException("rag: PUT signed URL returned HTTP " + putResp.statusCode());
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("rag: PUT signed URL failed", e);
+        }
+
+        return upload;
     }
 
     /** List RAG files with optional pagination. */
