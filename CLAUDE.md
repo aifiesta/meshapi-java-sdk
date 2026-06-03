@@ -28,7 +28,8 @@ java/
 │   │   ├── BatchesResource.java
 │   │   ├── ModelsResource.java
 │   │   ├── TemplatesResource.java
-│   │   └── ImagesResource.java
+│   │   ├── ImagesResource.java
+│   └── VideosResource.java      # /v1/video/generations (BytePlus Seedance async)
 │   └── types/                    # One subpackage per resource area
 │       ├── chat/
 │       ├── rag/                  # InitUploadRequest/Response, SearchRequest/Response, …
@@ -96,6 +97,7 @@ Create `java/.env.livetest` (read automatically by `LiveTestBase`) or export the
 | `MESHAPI_IMAGE_GEN_MODEL` | No | _(skipped if unset)_ | Image generation model; test skipped if blank |
 | `MESHAPI_IMAGE_URL` | No | _(skipped if unset)_ | Publicly accessible image URL for vision tests |
 | `MESHAPI_REALTIME_MODEL` | No | `openai/gpt-realtime-mini` | Realtime-capable model used in WebSocket live tests |
+| `MESHAPI_VIDEO_GEN_MODEL` | No | _(skipped if unset)_ | BytePlus Seedance model for video generation tests; test skipped if blank |
 
 Example `java/.env.livetest`:
 
@@ -143,6 +145,7 @@ mvn test -Dtest="RagLiveTest#uploadEmbedSearch"
 | `ErrorsLiveTest` | 401/404 error handling |
 | `FeatureMatrixLiveTest` | Cross-model feature matrix |
 | `RagLiveTest` | RAG upload → embed → list → search |
+| `VideoLiveTest` | Video generation create + poll lifecycle |
 | `RealtimeLiveTest` | WebSocket connect/close, session.created, session.update, error envelopes, audio frame typing |
 
 ### RAG live test notes

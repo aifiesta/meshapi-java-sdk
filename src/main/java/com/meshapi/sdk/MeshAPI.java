@@ -10,6 +10,7 @@ import com.meshapi.sdk.resources.ModelsResource;
 import com.meshapi.sdk.resources.ResponsesResource;
 import com.meshapi.sdk.resources.TemplatesResource;
 import com.meshapi.sdk.resources.ImagesResource;
+import com.meshapi.sdk.resources.VideosResource;
 import com.meshapi.sdk.resources.RagResource;
 import com.meshapi.sdk.resources.RealtimeResource;
 
@@ -48,6 +49,7 @@ public class MeshAPI {
     private final ModelsResource models;
     private final TemplatesResource templates;
     private final ImagesResource images;
+    private final VideosResource videos;
     private final RagResource rag;
     private final RealtimeResource realtime;
 
@@ -75,6 +77,7 @@ public class MeshAPI {
         this.models = new ModelsResource(http);
         this.templates = new TemplatesResource(http);
         this.images = new ImagesResource(http);
+        this.videos = new VideosResource(http);
         this.rag = new RagResource(http);
         this.realtime = new RealtimeResource(javaHttp, mapper, builder.baseUrl, builder.token);
     }
@@ -87,6 +90,7 @@ public class MeshAPI {
     public ModelsResource models() { return models; }
     public TemplatesResource templates() { return templates; }
     public ImagesResource images() { return images; }
+    public VideosResource videos() { return videos; }
     public RagResource rag() { return rag; }
     public RealtimeResource realtime() { return realtime; }
 
