@@ -12,6 +12,8 @@ import com.meshapi.sdk.resources.TemplatesResource;
 import com.meshapi.sdk.resources.ImagesResource;
 import com.meshapi.sdk.resources.RagResource;
 import com.meshapi.sdk.resources.RealtimeResource;
+import com.meshapi.sdk.resources.AudioResource;
+import com.meshapi.sdk.resources.VideosResource;
 
 import java.time.Duration;
 
@@ -50,6 +52,8 @@ public class MeshAPI {
     private final ImagesResource images;
     private final RagResource rag;
     private final RealtimeResource realtime;
+    private final AudioResource audio;
+    private final VideosResource videos;
 
     private MeshAPI(Builder builder) {
         ObjectMapper mapper = new ObjectMapper();
@@ -77,6 +81,8 @@ public class MeshAPI {
         this.images = new ImagesResource(http);
         this.rag = new RagResource(http);
         this.realtime = new RealtimeResource(javaHttp, mapper, builder.baseUrl, builder.token);
+        this.audio = new AudioResource(http);
+        this.videos = new VideosResource(http);
     }
 
     public ChatResource chat() { return chat; }
@@ -89,6 +95,8 @@ public class MeshAPI {
     public ImagesResource images() { return images; }
     public RagResource rag() { return rag; }
     public RealtimeResource realtime() { return realtime; }
+    public AudioResource audio() { return audio; }
+    public VideosResource videos() { return videos; }
 
     public static Builder builder() { return new Builder(); }
 

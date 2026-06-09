@@ -145,6 +145,35 @@ mvn test -Dtest="RagLiveTest#uploadEmbedSearch"
 | `RagLiveTest` | RAG upload → embed → list → search |
 | `RealtimeLiveTest` | WebSocket connect/close, session.created, session.update, error envelopes, audio frame typing |
 
+### Available live test classes (updated)
+
+| Class | What it tests |
+|-------|---------------|
+| `ChatLiveTest` | Chat completions (basic, tools, multi-turn) |
+| `StreamLiveTest` | Streaming chat and responses |
+| `ModelsLiveTest` | Model listing |
+| `TemplatesLiveTest` | Template CRUD lifecycle |
+| `InferenceResourcesLiveTest` | Embeddings, responses |
+| `ErrorsLiveTest` | 401/404 error handling |
+| `FeatureMatrixLiveTest` | Cross-model feature matrix |
+| `RagLiveTest` | RAG upload → embed → list → search |
+| `RealtimeLiveTest` | WebSocket connect/close, session lifecycle |
+| `AudioLiveTest` | TTS synthesize, voice listing |
+| `VideoLiveTest` | Video list, generate → retrieve |
+
+---
+
+## Contribution checklist
+
+Every SDK change — however small — must include all of the following before merging:
+
+1. **Live tests** — add or update `livetests/src/test/java/com/meshapi/livetest/<Name>LiveTest.java` to cover the new/changed behaviour.
+2. **Unit tests** — if the change affects serialisation, retry logic, or error mapping, add a test in `src/test/`.
+3. **README** — update `README.md` with a usage example for any new or changed public surface.
+4. **meshapi-docs** — open a follow-up PR (or note in the PR description) to update the [meshapi-docs](https://github.com/aifiesta/meshapi-docs) repository so the developer documentation stays in sync.
+
+---
+
 ### RAG live test notes
 
 `RagLiveTest#uploadEmbedSearch` does the following:

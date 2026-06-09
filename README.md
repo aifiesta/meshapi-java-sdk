@@ -79,6 +79,79 @@ EmbeddingsResponse emb = client.embeddings().create(
 );
 ```
 
+## Audio (TTS, STT, voices)
+
+```java
+import com.meshapi.sdk.types.audio.*;
+
+// Text-to-speech — returns raw audio bytes
+byte[] audioBytes = client.audio().synthesize(
+    SpeechRequest.builder()
+        .input("Hello from MeshAPI.")
+        .model("sarvam/bulbul:v2")
+        .voice("meera")
+        .build()
+);
+Files.write(Paths.get("output.wav"), audioBytes);
+
+// Speech-to-text — submit transcription job
+byte[] fileData = Files.readAllBytes(Paths.get("audio.wav"));
+TranscriptionResponse result = client.audio().transcribe(
+    TranscriptionRequest.builder()
+        .model("sarvam/saaras:v3")
+        .file(fileData)
+        .fileName("audio.wav")
+        .language("en")
+        .build()
+);
+System.out.println(result.text);
+
+// Retrieve a previously submitted transcription
+Object stored = client.audio().getTranscription("transcription-id");
+
+// Translate audio to English
+TranscriptionResponse translated = client.audio().translate(
+    TranscriptionRequest.builder()
+        .model("sarvam/saaras:v3")
+        .file(fileData)
+        .fileName("audio.wav")
+        .build()
+);
+System.out.println(translated.text);
+
+// List available voices
+Object voices = client.audio().listVoices(10, null);
+
+// Get a specific voice
+Object voice = client.audio().getVoice("voice-id");
+```
+
+## Video generation
+
+```java
+import com.meshapi.sdk.types.video.*;
+
+// Submit a video generation task
+CreateVideoGenerationResponse task = client.videos().generate(
+    VideoGenerationRequest.builder()
+        .model("byteplus/dreamina-seedance-2-0")
+        .addContent(VideoContentItem.text("A serene mountain lake at sunrise"))
+        .build()
+);
+System.out.println("Task ID: " + task.id);
+
+// Poll until complete
+while (true) {
+    VideoTaskResponse status = client.videos().retrieve(task.id);
+    if ("succeeded".equals(status.status) || "failed".equals(status.status)) break;
+    Thread.sleep(5_000);
+}
+
+// List past generation tasks
+VideoTaskListResponse listing = client.videos().list(20, null, null, null, null);
+System.out.println(listing.total + " total tasks");
+```
+
 ## Image generation
 
 ```java
