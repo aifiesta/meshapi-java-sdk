@@ -160,6 +160,72 @@ public class HttpClient {
         }
     }
 
+    public byte[] postBytes(String path, Object body) {
+        try {
+            String json = mapper.writeValueAsString(body);
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + path))
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .header("Authorization", "Bearer " + token)
+                    .header("Content-Type", "application/json")
+                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
+                    .build();
+            HttpResponse<byte[]> response = javaClient.send(req, HttpResponse.BodyHandlers.ofByteArray());
+            if (response.statusCode() >= 400) {
+                HttpResponse<String> errResp = toStringResponse(response, new String(response.body()));
+                throw MeshAPIError.fromResponse(errResp);
+            }
+            return response.body();
+        } catch (MeshAPIError e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("POST bytes failed: " + e.getMessage(), e);
+        }
+    }
+
+    public <T> T postMultipart(String path, java.util.Map<String, String> fields, byte[] fileData, String filename, Class<T> responseType) {
+        try {
+            String boundary = "----MeshAPIBoundary" + System.currentTimeMillis();
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+
+            for (java.util.Map.Entry<String, String> entry : fields.entrySet()) {
+                if (entry.getValue() == null) continue;
+                baos.write(("--" + boundary + "\r\n").getBytes());
+                baos.write(("Content-Disposition: form-data; name=\"" + entry.getKey() + "\"\r\n\r\n").getBytes());
+                baos.write((entry.getValue() + "\r\n").getBytes());
+            }
+
+            if (fileData != null) {
+                baos.write(("--" + boundary + "\r\n").getBytes());
+                baos.write(("Content-Disposition: form-data; name=\"file\"; filename=\"" + filename + "\"\r\n").getBytes());
+                baos.write("Content-Type: application/octet-stream\r\n\r\n".getBytes());
+                baos.write(fileData);
+                baos.write("\r\n".getBytes());
+            }
+
+            baos.write(("--" + boundary + "--\r\n").getBytes());
+
+            HttpRequest req = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl + path))
+                    .POST(HttpRequest.BodyPublishers.ofByteArray(baos.toByteArray()))
+                    .header("Authorization", "Bearer " + token)
+                    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+                    .header("Accept", "application/json")
+                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
+                    .build();
+
+            HttpResponse<String> response = javaClient.send(req, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() >= 400) {
+                throw MeshAPIError.fromResponse(response);
+            }
+            return mapper.readValue(response.body(), responseType);
+        } catch (MeshAPIError e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("POST multipart failed: " + e.getMessage(), e);
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Internal
     // -----------------------------------------------------------------------
