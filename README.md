@@ -106,6 +106,9 @@ TranscriptionResponse result = client.audio().transcribe(
 );
 System.out.println(result.text);
 
+// Retrieve a previously submitted transcription
+Object stored = client.audio().getTranscription("transcription-id");
+
 // Translate audio to English
 TranscriptionResponse translated = client.audio().translate(
     TranscriptionRequest.builder()
