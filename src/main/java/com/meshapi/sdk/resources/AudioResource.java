@@ -5,6 +5,8 @@ import com.meshapi.sdk.types.audio.SpeechRequest;
 import com.meshapi.sdk.types.audio.TranscriptionRequest;
 import com.meshapi.sdk.types.audio.TranscriptionResponse;
 import com.meshapi.sdk.types.audio.TranscriptionTranslateRequest;
+import com.meshapi.sdk.types.audio.Voice;
+import com.meshapi.sdk.types.audio.VoicesResponse;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -44,8 +46,7 @@ public class AudioResource {
     }
 
     /** GET /v1/audio/voices */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> listVoices(Map<String, String> queryParams) {
+    public VoicesResponse listVoices(Map<String, String> queryParams) {
         StringBuilder qs = new StringBuilder();
         if (queryParams != null) {
             for (Map.Entry<String, String> e : queryParams.entrySet()) {
@@ -53,13 +54,12 @@ public class AudioResource {
                 qs.append(e.getKey()).append("=").append(e.getValue());
             }
         }
-        return http.get("/v1/audio/voices", qs.length() > 0 ? qs.toString() : null, Map.class);
+        return http.get("/v1/audio/voices", qs.length() > 0 ? qs.toString() : null, VoicesResponse.class);
     }
 
     /** GET /v1/audio/voices/{voice_id} */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> getVoice(String voiceId) {
-        return http.get("/v1/audio/voices/" + voiceId, Map.class);
+    public Voice getVoice(String voiceId) {
+        return http.get("/v1/audio/voices/" + voiceId, Voice.class);
     }
 
     private static Map<String, String> transcriptionRequestToFields(TranscriptionRequest p) {

@@ -160,6 +160,7 @@ mvn test -Dtest="RagLiveTest#uploadEmbedSearch"
 | `RealtimeLiveTest` | WebSocket connect/close, session lifecycle |
 | `AudioLiveTest` | TTS synthesize, voice listing |
 | `VideoLiveTest` | Video list, generate → retrieve |
+| `CompareLiveTest` | Non-streaming compare, streaming compare |
 
 ---
 
@@ -173,6 +174,45 @@ Every SDK change — however small — must include all of the following before 
 4. **meshapi-docs** — open a follow-up PR (or note in the PR description) to update the [meshapi-docs](https://github.com/aifiesta/meshapi-docs) repository so the developer documentation stays in sync.
 
 ---
+
+---
+
+## Release
+
+The Java SDK is published to Maven Central under `ai.meshapi:meshapi-java-sdk`. Publishing requires Maven Central credentials and GPG signing configured in `~/.m2/settings.xml`.
+
+### Release checklist
+
+1. **Bump the version** in `pom.xml`:
+   ```xml
+   <version>0.1.1</version>
+   ```
+
+2. **Build and verify**:
+   ```bash
+   mvn clean verify
+   ```
+
+3. **Deploy to Maven Central staging**:
+   ```bash
+   mvn clean deploy -P release
+   ```
+
+4. **Commit the version bump, tag, and push**:
+   ```bash
+   git add pom.xml
+   git commit -m "chore: release v0.1.1"
+   git tag v0.1.1
+   git push origin main
+   git push origin v0.1.1
+   ```
+
+5. **Log in to OSSRH** at `https://s01.oss.sonatype.org`, find the staging repository, close it, then release it.
+
+6. **Verify** the release is available on Maven Central (may take 10–30 min):
+   ```bash
+   mvn dependency:get -Dartifact=ai.meshapi:meshapi-java-sdk:0.1.1
+   ```
 
 ### RAG live test notes
 
