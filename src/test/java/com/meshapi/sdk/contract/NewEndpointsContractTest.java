@@ -2,7 +2,6 @@ package com.meshapi.sdk.contract;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshapi.sdk.types.batch.BatchObject;
-import com.meshapi.sdk.types.documents.DocumentResponse;
 import com.meshapi.sdk.types.moderations.ModerationResponse;
 import com.meshapi.sdk.types.models.ModelsPage;
 import com.meshapi.sdk.types.router.RouterSelectResponse;
@@ -42,28 +41,6 @@ class NewEndpointsContractTest {
         assertFalse(resp.results.get(0).categories.get("violence"));
         assertNotNull(resp.results.get(0).categoryScores);
         assertTrue(resp.results.get(0).categoryScores.get("hate") instanceof Double);
-    }
-
-    // -----------------------------------------------------------------------
-    // Documents
-    // -----------------------------------------------------------------------
-
-    @Test
-    void documentResponse_parsedCorrectly() throws Exception {
-        DocumentResponse doc = MAPPER.readValue(fixture("document_response.json"), DocumentResponse.class);
-        assertEquals("doc_abc123", doc.documentId);
-        assertEquals("completed", doc.status);
-        assertEquals("pdf", doc.format);
-        assertEquals("google/gemini-2.5-flash-lite", doc.model);
-        assertEquals("Q3 Sales Summary", doc.title);
-        assertNotNull(doc.downloadUrl);
-        assertEquals(204800L, doc.sizeBytes);
-        assertEquals(150, doc.promptTokens);
-        assertEquals(800, doc.completionTokens);
-        assertEquals(950, doc.totalTokens);
-        assertNull(doc.failureReason);
-        assertNotNull(doc.createdAt);
-        assertNotNull(doc.updatedAt);
     }
 
     // -----------------------------------------------------------------------

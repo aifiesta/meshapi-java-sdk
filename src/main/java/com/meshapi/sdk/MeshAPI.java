@@ -15,7 +15,6 @@ import com.meshapi.sdk.resources.RealtimeResource;
 import com.meshapi.sdk.resources.AudioResource;
 import com.meshapi.sdk.resources.VideosResource;
 import com.meshapi.sdk.resources.ModerationsResource;
-import com.meshapi.sdk.resources.DocumentsResource;
 import com.meshapi.sdk.resources.RouterResource;
 import com.meshapi.sdk.resources.WebResource;
 
@@ -59,7 +58,6 @@ public class MeshAPI {
     private final AudioResource audio;
     private final VideosResource videos;
     private final ModerationsResource moderations;
-    private final DocumentsResource documents;
     private final RouterResource router;
     private final WebResource web;
 
@@ -92,7 +90,6 @@ public class MeshAPI {
         this.audio = new AudioResource(http);
         this.videos = new VideosResource(http);
         this.moderations = new ModerationsResource(http);
-        this.documents = new DocumentsResource(http);
         this.router = new RouterResource(http);
         this.web = new WebResource(http);
     }
@@ -110,7 +107,6 @@ public class MeshAPI {
     public AudioResource audio() { return audio; }
     public VideosResource videos() { return videos; }
     public ModerationsResource moderations() { return moderations; }
-    public DocumentsResource documents() { return documents; }
     public RouterResource router() { return router; }
     public WebResource web() { return web; }
 
