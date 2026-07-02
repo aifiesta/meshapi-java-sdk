@@ -33,6 +33,9 @@ public class ChatCompletionRequest {
     @JsonProperty("async_mode") private Boolean asyncMode;
     @JsonProperty("modalities") private List<String> modalities;
     @JsonProperty("audio") private Map<String, Object> audio;
+    @JsonProperty("cache") private Boolean cache;
+    @JsonProperty("reasoning_effort") private String reasoningEffort;
+    @JsonProperty("timeout") private Integer timeout;
 
     private ChatCompletionRequest() {}
 
@@ -66,6 +69,10 @@ public class ChatCompletionRequest {
         public Builder asyncMode(boolean asyncMode) { req.asyncMode = asyncMode; return this; }
         public Builder modalities(List<String> modalities) { req.modalities = modalities; return this; }
         public Builder audio(Map<String, Object> audio) { req.audio = audio; return this; }
+        public Builder cache(boolean cache) { req.cache = cache; return this; }
+        /** Reasoning effort hint: "high", "medium", "low", or "none". */
+        public Builder reasoningEffort(String reasoningEffort) { req.reasoningEffort = reasoningEffort; return this; }
+        public Builder timeout(int timeoutSeconds) { req.timeout = timeoutSeconds; return this; }
 
         public Builder addMessage(ChatMessage msg) {
             messages.add(msg);

@@ -15,6 +15,7 @@ public class CreateTemplateRequest {
     @JsonProperty("model") private String model;
     @JsonProperty("params") private Map<String, Object> params;
     @JsonProperty("variables") private List<String> variables;
+    @JsonProperty("team_id") private String teamId;
 
     private CreateTemplateRequest() {}
 
@@ -32,6 +33,7 @@ public class CreateTemplateRequest {
         public Builder model(String model) { req.model = model; return this; }
         public Builder params(Map<String, Object> params) { req.params = params; return this; }
         public Builder variables(List<String> vars) { req.variables = vars; return this; }
+        public Builder teamId(String teamId) { req.teamId = teamId; return this; }
 
         public CreateTemplateRequest build() { return req; }
     }

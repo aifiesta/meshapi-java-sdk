@@ -97,33 +97,33 @@ Files.write(Paths.get("output.wav"), audioBytes);
 // Speech-to-text — submit transcription job
 byte[] fileData = Files.readAllBytes(Paths.get("audio.wav"));
 TranscriptionResponse result = client.audio().transcribe(
-    TranscriptionRequest.builder()
-        .model("sarvam/saaras:v3")
-        .file(fileData)
-        .fileName("audio.wav")
-        .language("en")
-        .build()
+    fileData, "audio.wav",
+    new TranscriptionRequest()  // model, languageCode, etc.
 );
 System.out.println(result.text);
 
 // Retrieve a previously submitted transcription
-Object stored = client.audio().getTranscription("transcription-id");
+Map<String, Object> stored = client.audio().getTranscription("transcription-id");
 
-// Translate audio to English
-TranscriptionResponse translated = client.audio().translate(
-    TranscriptionRequest.builder()
-        .model("sarvam/saaras:v3")
-        .file(fileData)
-        .fileName("audio.wav")
-        .build()
+// POST /v1/audio/translations — OpenAI-compatible standalone translation endpoint
+// Translates speech in any language to English text.
+AudioTranslationRequest translationParams = new AudioTranslationRequest();
+translationParams.model = "openai/whisper-1";
+TranscriptionResponse translated = client.audio().translateAudio(
+    fileData, "audio.mp3", translationParams
 );
 System.out.println(translated.text);
 
+// POST /v1/audio/transcriptions/translate — legacy alias (still works)
+TranscriptionResponse legacyTranslated = client.audio().translate(
+    fileData, "audio.mp3", new TranscriptionTranslateRequest()
+);
+
 // List available voices
-Object voices = client.audio().listVoices(10, null);
+VoicesResponse voices = client.audio().listVoices(null);
 
 // Get a specific voice
-Object voice = client.audio().getVoice("voice-id");
+Voice voice = client.audio().getVoice("voice-id");
 ```
 
 ## Video generation
@@ -314,9 +314,31 @@ List<ModelInfo> free   = client.models().free();
 
 ```java
 TemplateSummary tmpl = client.templates().create(
-    CreateTemplateRequest.builder().name("my-tpl").system("You are helpful.").build());
+    CreateTemplateRequest.builder()
+        .name("my-tpl")
+        .system("You are helpful.")
+        .teamId("team_abc123")   // optional: assign to a team
+        .build());
 client.templates().delete(tmpl.id);
 ```
+
+## Web search
+
+```java
+import com.meshapi.sdk.types.websearch.*;
+
+WebSearchResponse resp = client.web().search(
+    WebSearchRequest.builder()
+        .query("latest Mars rover discoveries")
+        .includeAnswer(true)
+        .maxResults(10)
+        .build()
+);
+System.out.println(resp.provider + ": " + resp.answer);
+resp.results.forEach(r -> System.out.println(r.url + "  " + r.title));
+```
+
+Gated server-side by `WEB_SEARCH_ENABLED`. Inspect `resp.provider` ("native" or "tavily") to see which engine served the request.
 
 ## Error handling
 

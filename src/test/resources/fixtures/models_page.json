@@ -1,0 +1,26 @@
+{
+  "items": [
+    {
+      "id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "context_length": 128000,
+      "is_free": false,
+      "pricing": {
+        "prompt_usd_per_1k": "0.000150",
+        "completion_usd_per_1k": "0.000600"
+      },
+      "supports_thinking": false,
+      "supports_completions_api": true,
+      "supports_responses_api": true,
+      "model_type": "text",
+      "input_modalities": ["text"],
+      "output_modalities": ["text"],
+      "brand": "openai",
+      "provider": "openai"
+    }
+  ],
+  "total": 1,
+  "limit": 20,
+  "offset": 0,
+  "brands": ["openai"]
+}

@@ -14,6 +14,10 @@ import com.meshapi.sdk.resources.RagResource;
 import com.meshapi.sdk.resources.RealtimeResource;
 import com.meshapi.sdk.resources.AudioResource;
 import com.meshapi.sdk.resources.VideosResource;
+import com.meshapi.sdk.resources.ModerationsResource;
+import com.meshapi.sdk.resources.DocumentsResource;
+import com.meshapi.sdk.resources.RouterResource;
+import com.meshapi.sdk.resources.WebResource;
 
 import java.time.Duration;
 
@@ -54,6 +58,10 @@ public class MeshAPI {
     private final RealtimeResource realtime;
     private final AudioResource audio;
     private final VideosResource videos;
+    private final ModerationsResource moderations;
+    private final DocumentsResource documents;
+    private final RouterResource router;
+    private final WebResource web;
 
     private MeshAPI(Builder builder) {
         ObjectMapper mapper = new ObjectMapper();
@@ -83,6 +91,10 @@ public class MeshAPI {
         this.realtime = new RealtimeResource(javaHttp, mapper, builder.baseUrl, builder.token);
         this.audio = new AudioResource(http);
         this.videos = new VideosResource(http);
+        this.moderations = new ModerationsResource(http);
+        this.documents = new DocumentsResource(http);
+        this.router = new RouterResource(http);
+        this.web = new WebResource(http);
     }
 
     public ChatResource chat() { return chat; }
@@ -97,6 +109,10 @@ public class MeshAPI {
     public RealtimeResource realtime() { return realtime; }
     public AudioResource audio() { return audio; }
     public VideosResource videos() { return videos; }
+    public ModerationsResource moderations() { return moderations; }
+    public DocumentsResource documents() { return documents; }
+    public RouterResource router() { return router; }
+    public WebResource web() { return web; }
 
     public static Builder builder() { return new Builder(); }
 

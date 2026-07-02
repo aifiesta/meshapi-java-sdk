@@ -89,8 +89,13 @@ public class JsonSseParser<T> implements Iterator<T>, AutoCloseable {
         }
         try {
             JsonNode root = MAPPER.readTree(dataLine);
+            // Only the standard error envelope {"error": {"code": ..., "message": ...}}
+            // is a fatal stream error. Compare stream events carry a per-model "error"
+            // STRING for partial failures (one model failed, others succeed) — that is
+            // valid domain data and must be deserialized into the event type, not raised.
+            // Matches the Go and Node SDK semantics (fatal only when error is an object).
             JsonNode errorNode = root.path("error");
-            if (!errorNode.isMissingNode()) {
+            if (errorNode.isObject()) {
                 String code = errorNode.path("code").asText("upstream_error");
                 String msg = errorNode.path("message").asText("upstream error");
                 throw MeshAPIError.fromStreamFrame(code, msg);
