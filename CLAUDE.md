@@ -32,6 +32,7 @@ java/
 │       ├── chat/
 │       ├── rag/                  # InitUploadRequest/Response, SearchRequest/Response, …
 │       └── …
+
 ├── src/test/                     # Unit tests
 ├── livetests/                    # Live tests (separate Maven module)
 └── pom.xml
