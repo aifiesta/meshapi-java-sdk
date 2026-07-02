@@ -1,0 +1,32 @@
+{
+  "id": "batch_abc123",
+  "object": "batch",
+  "endpoint": "/v1/chat/completions",
+  "input_file_id": "file-input-001",
+  "output_file_id": "file-output-001",
+  "status": "completed",
+  "model": "openai/gpt-4o-mini",
+  "provider": "openai",
+  "created_at": 1700000000,
+  "completed_at": 1700001000,
+  "usage_synced": true,
+  "error_file_id": null,
+  "expires_at": 1700086400,
+  "completion_window": "24h",
+  "request_counts": {
+    "total": 3,
+    "completed": 3,
+    "failed": 0
+  },
+  "metadata": {
+    "job": "test-run-1"
+  },
+  "results": [
+    {
+      "id": "req-001",
+      "status": 200,
+      "body": {"choices": [{"message": {"role": "assistant", "content": "Hello!"}}]}
+    }
+  ],
+  "errors_detail": []
+}

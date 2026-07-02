@@ -4,6 +4,7 @@ import com.meshapi.sdk.MeshAPI;
 import com.meshapi.sdk.types.audio.SpeechRequest;
 import com.meshapi.sdk.types.audio.TranscriptionRequest;
 import com.meshapi.sdk.types.audio.TranscriptionResponse;
+import com.meshapi.sdk.types.audio.VoicesResponse;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -52,8 +53,9 @@ class AudioLiveTest extends LiveTestBase {
     @Test
     void audio_listVoices() {
         MeshAPI client = newClient();
-        Map<String, Object> voices = client.audio().listVoices(Map.of("page_size", "5"));
+        VoicesResponse voices = client.audio().listVoices(Map.of("page_size", "5"));
         assertNotNull(voices);
-        System.out.printf("[PASS] audio.listVoices -> %s%n", voices.getClass().getSimpleName());
+        System.out.printf("[PASS] audio.listVoices -> %d voices%n",
+                voices.voices == null ? 0 : voices.voices.size());
     }
 }

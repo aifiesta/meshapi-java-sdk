@@ -1,10 +1,13 @@
 package com.meshapi.sdk.resources;
 
 import com.meshapi.sdk.internal.HttpClient;
+import com.meshapi.sdk.types.audio.AudioTranslationRequest;
 import com.meshapi.sdk.types.audio.SpeechRequest;
 import com.meshapi.sdk.types.audio.TranscriptionRequest;
 import com.meshapi.sdk.types.audio.TranscriptionResponse;
 import com.meshapi.sdk.types.audio.TranscriptionTranslateRequest;
+import com.meshapi.sdk.types.audio.Voice;
+import com.meshapi.sdk.types.audio.VoicesResponse;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -33,7 +36,9 @@ public class AudioResource {
         return http.get("/v1/audio/transcriptions/" + transcriptionId, Map.class);
     }
 
-    /** POST /v1/audio/transcriptions/translate — multipart file upload, translates to English. */
+    /** POST /v1/audio/transcriptions/translate — multipart file upload, translates to English.
+     *  Distinct from {@link #translateAudio} (POST /v1/audio/translations); this path has a
+     *  server-side default model, so {@code params}/{@code model} may be null here. */
     public TranscriptionResponse translate(byte[] fileData, String filename, TranscriptionTranslateRequest params) {
         Map<String, String> fields = new LinkedHashMap<>();
         if (params != null) {
@@ -43,9 +48,29 @@ public class AudioResource {
         return http.postMultipart("/v1/audio/transcriptions/translate", fields, fileData, filename, TranscriptionResponse.class);
     }
 
+    /**
+     * POST /v1/audio/translations — OpenAI-compatible standalone translation endpoint.
+     * Translates speech in any language to English text.
+     *
+     * @param fileData  raw audio bytes (required)
+     * @param filename  file name including extension (required)
+     * @param params    optional translation parameters; model is required in the spec and must be non-null here
+     */
+    public TranscriptionResponse translateAudio(byte[] fileData, String filename, AudioTranslationRequest params) {
+        if (params == null || params.model == null || params.model.isBlank()) {
+            throw new IllegalArgumentException(
+                "AudioTranslationRequest.model is required for POST /v1/audio/translations");
+        }
+        Map<String, String> fields = new LinkedHashMap<>();
+        fields.put("model", params.model);
+        if (params.prompt != null) fields.put("prompt", params.prompt);
+        if (params.responseFormat != null) fields.put("response_format", params.responseFormat);
+        if (params.temperature != null) fields.put("temperature", String.valueOf(params.temperature));
+        return http.postMultipart("/v1/audio/translations", fields, fileData, filename, TranscriptionResponse.class);
+    }
+
     /** GET /v1/audio/voices */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> listVoices(Map<String, String> queryParams) {
+    public VoicesResponse listVoices(Map<String, String> queryParams) {
         StringBuilder qs = new StringBuilder();
         if (queryParams != null) {
             for (Map.Entry<String, String> e : queryParams.entrySet()) {
@@ -53,13 +78,12 @@ public class AudioResource {
                 qs.append(e.getKey()).append("=").append(e.getValue());
             }
         }
-        return http.get("/v1/audio/voices", qs.length() > 0 ? qs.toString() : null, Map.class);
+        return http.get("/v1/audio/voices", qs.length() > 0 ? qs.toString() : null, VoicesResponse.class);
     }
 
     /** GET /v1/audio/voices/{voice_id} */
-    @SuppressWarnings("unchecked")
-    public Map<String, Object> getVoice(String voiceId) {
-        return http.get("/v1/audio/voices/" + voiceId, Map.class);
+    public Voice getVoice(String voiceId) {
+        return http.get("/v1/audio/voices/" + voiceId, Voice.class);
     }
 
     private static Map<String, String> transcriptionRequestToFields(TranscriptionRequest p) {

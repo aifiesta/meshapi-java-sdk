@@ -5,6 +5,9 @@ import com.meshapi.sdk.types.batch.BatchListResponse;
 import com.meshapi.sdk.types.batch.BatchObject;
 import com.meshapi.sdk.types.batch.CreateBatchRequest;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 public class BatchesResource {
     private final HttpClient http;
 
@@ -19,7 +22,7 @@ public class BatchesResource {
     public BatchListResponse list(String after, Integer limit) {
         StringBuilder qs = new StringBuilder();
         if (after != null && !after.isBlank()) {
-            qs.append("after=").append(after);
+            qs.append("after=").append(URLEncoder.encode(after, StandardCharsets.UTF_8).replace("+", "%20"));
         }
         if (limit != null) {
             if (qs.length() > 0) qs.append("&");
@@ -29,10 +32,12 @@ public class BatchesResource {
     }
 
     public BatchObject get(String batchId) {
-        return http.get("/v1/batches/" + batchId, BatchObject.class);
+        String encoded = URLEncoder.encode(batchId, StandardCharsets.UTF_8).replace("+", "%20");
+        return http.get("/v1/batches/" + encoded, BatchObject.class);
     }
 
     public BatchObject cancel(String batchId) {
-        return http.post("/v1/batches/" + batchId + "/cancel", java.util.Map.of(), BatchObject.class);
+        String encoded = URLEncoder.encode(batchId, StandardCharsets.UTF_8).replace("+", "%20");
+        return http.post("/v1/batches/" + encoded + "/cancel", java.util.Map.of(), BatchObject.class);
     }
 }

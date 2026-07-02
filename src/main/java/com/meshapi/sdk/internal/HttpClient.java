@@ -139,6 +139,15 @@ public class HttpClient {
         }
     }
 
+    /**
+     * Returns the underlying JDK HttpClient.
+     * Intended for use by SDK resources that need to make calls outside the standard JSON API
+     * (e.g. PUT to a signed URL without Authorization headers).
+     */
+    public java.net.http.HttpClient javaClient() {
+        return javaClient;
+    }
+
     public byte[] getBytes(String path) {
         HttpRequest req = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl + path))

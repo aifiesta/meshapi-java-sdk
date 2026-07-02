@@ -58,17 +58,21 @@ public class RagResource {
         InitUploadResponse upload = initUpload(req);
 
         try {
-            java.net.http.HttpClient jdkClient = java.net.http.HttpClient.newHttpClient();
+            // Reuse the shared JDK HttpClient (respects any custom client injected via MeshAPI.Builder).
+            // Do NOT include the Authorization header — the signed URL carries its own credentials.
             HttpRequest putReq = HttpRequest.newBuilder()
                     .uri(URI.create(upload.signedUrl))
                     .header("Content-Type", mimeType)
                     .PUT(HttpRequest.BodyPublishers.ofByteArray(content))
                     .build();
-            HttpResponse<Void> putResp = jdkClient.send(putReq, HttpResponse.BodyHandlers.discarding());
+            HttpResponse<Void> putResp = http.javaClient().send(putReq, HttpResponse.BodyHandlers.discarding());
             if (putResp.statusCode() >= 400) {
                 throw new RuntimeException("rag: PUT signed URL returned HTTP " + putResp.statusCode());
             }
-        } catch (IOException | InterruptedException e) {
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("rag: PUT signed URL interrupted", e);
+        } catch (IOException e) {
             throw new RuntimeException("rag: PUT signed URL failed", e);
         }
 

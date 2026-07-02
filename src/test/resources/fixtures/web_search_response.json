@@ -1,0 +1,15 @@
+{
+  "query": "latest James Webb telescope discoveries",
+  "provider": "native",
+  "answer": "The James Webb Space Telescope has recently identified the earliest known galaxy, JADES-GS-z14-0, formed just 290 million years after the Big Bang.",
+  "results": [
+    {
+      "title": "JWST spots earliest known galaxy",
+      "url": "https://example.com/jwst",
+      "content": "Astronomers using the James Webb Space Telescope identified JADES-GS-z14-0…",
+      "score": 0.93,
+      "published_date": "2024-06-11"
+    }
+  ],
+  "request_id": "req_01J123456789"
+}

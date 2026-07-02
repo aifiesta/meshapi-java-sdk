@@ -1,0 +1,8 @@
+{
+  "model": "openai/gpt-4o-mini",
+  "auto_router": {
+    "fallback_used": false,
+    "fallback_reason": null
+  },
+  "reasoning_effort": "medium"
+}

@@ -24,4 +24,15 @@ public class ResponsesRequest {
     @JsonProperty("response_format") public Map<String, Object> responseFormat;
     @JsonProperty("plugins") public List<Object> plugins;
     @JsonProperty("user") public String user;
+    // Fields added in second audit pass
+    @JsonProperty("previous_response_id") public String previousResponseId;
+    @JsonProperty("instructions") public String instructions;
+    @JsonProperty("thinking") public Map<String, Object> thinking;
+    @JsonProperty("caching") public Map<String, Object> caching;
+    @JsonProperty("store") public Boolean store;
+    @JsonProperty("include") public List<Object> include;
+    @JsonProperty("expire_at") public Long expireAt;
+    @JsonProperty("max_tool_calls") public Integer maxToolCalls;
+    @JsonProperty("context_management") public Map<String, Object> contextManagement;
+    @JsonProperty("timeout") public Integer timeout;
 }
