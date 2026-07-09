@@ -1,5 +1,6 @@
 package com.meshapi.sdk.types.chat;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -37,12 +38,23 @@ public class ChatCompletionRequest {
     @JsonProperty("reasoning_effort") private String reasoningEffort;
     @JsonProperty("timeout") private Integer timeout;
 
+    /**
+     * Client-side model-fallback chain for this call — overrides the client's
+     * {@code FallbackConfig.models}. NEVER serialized to the wire; the SDK
+     * drives the chain itself. Distinct from {@code models}, which is a
+     * server-side, provider-handled fallback list.
+     */
+    @JsonIgnore private List<String> fallbackModels;
+
     private ChatCompletionRequest() {}
 
     public List<ChatMessage> getMessages() { return messages; }
     public String getModel() { return model; }
+    /** Internal: used by the SDK's fallback chain to re-issue against another model. */
+    public void setModel(String model) { this.model = model; }
     public Boolean getStream() { return stream; }
     public void setStream(boolean stream) { this.stream = stream; }
+    public List<String> getFallbackModels() { return fallbackModels; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -73,6 +85,24 @@ public class ChatCompletionRequest {
         /** Reasoning effort hint: "high", "medium", "low", or "none". */
         public Builder reasoningEffort(String reasoningEffort) { req.reasoningEffort = reasoningEffort; return this; }
         public Builder timeout(int timeoutSeconds) { req.timeout = timeoutSeconds; return this; }
+
+        /**
+         * Per-call client-side fallback chain (overrides the client's
+         * {@code FallbackConfig.models}). Never sent to the server.
+         */
+        public Builder fallbackModels(List<String> fallbackModels) {
+            req.fallbackModels = List.copyOf(fallbackModels);
+            return this;
+        }
+
+        /**
+         * Per-call client-side fallback chain (overrides the client's
+         * {@code FallbackConfig.models}). Never sent to the server.
+         */
+        public Builder fallbackModels(String... fallbackModels) {
+            req.fallbackModels = List.of(fallbackModels);
+            return this;
+        }
 
         public Builder addMessage(ChatMessage msg) {
             messages.add(msg);
