@@ -37,12 +37,10 @@ public final class ResilienceEvents {
         }
         if (event instanceof GatewayRoutingEvent e) {
             String rid = ridSuffix(e.requestId);
-            String served = e.servedProvider != null && !e.servedProvider.isEmpty()
-                    ? " via " + e.servedProvider : "";
             String detail = e.fallback
                     ? e.attempts + " attempts, provider fallback"
                     : e.attempts + " attempts";
-            return "gateway served " + e.path + served + " (" + detail + ")" + rid;
+            return "gateway served " + e.path + " (" + detail + ")" + rid;
         }
         return event.toString();
     }

@@ -31,7 +31,6 @@ public class HttpClient {
     // routing_policy is active. See GatewayRoutingEvent.
     private static final String ROUTING_ATTEMPTS_HEADER = "x-mesh-routing-attempts";
     private static final String ROUTING_FALLBACK_HEADER = "x-mesh-routing-fallback";
-    private static final String SERVED_PROVIDER_HEADER = "x-mesh-served-provider";
     private static final String REQUEST_ID_HEADER = "x-request-id";
 
     private final java.net.http.HttpClient javaClient;
@@ -409,7 +408,6 @@ public class HttpClient {
                 path,
                 parsed > 0 ? parsed : 1,
                 "true".equals(response.headers().firstValue(ROUTING_FALLBACK_HEADER).orElse(null)),
-                response.headers().firstValue(SERVED_PROVIDER_HEADER).orElse(null),
                 response.headers().firstValue(REQUEST_ID_HEADER).orElse(null)));
     }
 

@@ -421,7 +421,7 @@ With `.debug(true)`, every retry and fallback prints a readable line to stderr:
 ```
 [meshapi] retrying POST /v1/chat/completions (attempt 1/4 failed: 503, next in 512ms) [req_abc]
 [meshapi] falling back openai/gpt-4o → anthropic/claude-sonnet-5 (1/2: 503 provider_not_available)
-[meshapi] gateway served /v1/chat/completions via bedrock (2 attempts, provider fallback) [req_abc]
+[meshapi] gateway served /v1/chat/completions (2 attempts, provider fallback) [req_abc]
 ```
 
 For structured logging, pass a `logger` — it receives every `RetryEvent`,
@@ -437,7 +437,7 @@ MeshAPI client = MeshAPI.builder()
         if (event instanceof RetryEvent e) log.warn("meshapi retry: {}", e);
         if (event instanceof FallbackEvent e) log.warn("meshapi fallback: {}", e);
         if (event instanceof GatewayRoutingEvent e && e.fallback) {
-            log.info("served by {} after {} attempts", e.servedProvider, e.attempts);
+            log.info("gateway used a provider fallback after {} attempts", e.attempts);
         }
     })
     .build();

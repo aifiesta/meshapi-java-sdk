@@ -424,6 +424,8 @@ class ResilienceTest {
 
     @Test
     void parsesXMeshRoutingHeadersIntoAGatewayRoutingEvent() {
+        // The gateway does not send a served-provider header; even if one sneaks
+        // through, the event carries no provider name (the field doesn't exist).
         FakeHttp http = new FakeHttp().enqueue(ok(OK_CHAT_BODY, Map.of(
                 "x-mesh-routing-attempts", "2",
                 "x-mesh-routing-fallback", "true",
@@ -439,9 +441,10 @@ class ResilienceTest {
                 .findFirst().orElseThrow();
         assertEquals(2, gw.attempts);
         assertTrue(gw.fallback);
-        assertEquals("bedrock", gw.servedProvider);
         assertEquals("req_routed", gw.requestId);
         assertEquals("/v1/chat/completions", gw.path);
+        // The provider name never appears anywhere on the event.
+        assertFalse(gw.toString().contains("bedrock"));
     }
 
     @Test
@@ -478,9 +481,9 @@ class ResilienceTest {
     @Test
     void formatsAGatewayRoutingLine() {
         String line = ResilienceEvents.format(new GatewayRoutingEvent(
-                "/v1/chat/completions", 2, true, "bedrock", "req_2"));
+                "/v1/chat/completions", 2, true, "req_2"));
         assertEquals(
-                "gateway served /v1/chat/completions via bedrock (2 attempts, provider fallback) [req_2]",
+                "gateway served /v1/chat/completions (2 attempts, provider fallback) [req_2]",
                 line);
     }
 }
