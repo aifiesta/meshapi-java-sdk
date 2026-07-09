@@ -3,13 +3,20 @@ package com.meshapi.sdk.internal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshapi.sdk.MeshAPIError;
 import com.meshapi.sdk.MeshAPI;
+import com.meshapi.sdk.resilience.FallbackConfig;
+import com.meshapi.sdk.resilience.GatewayRoutingEvent;
+import com.meshapi.sdk.resilience.ResilienceEvent;
+import com.meshapi.sdk.resilience.ResilienceEvents;
+import com.meshapi.sdk.resilience.RetryEvent;
+import com.meshapi.sdk.resilience.RetryPolicy;
 import com.meshapi.sdk.types.chat.ChatCompletionChunk;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.function.Consumer;
 
 /**
  * Internal HTTP client wrapping {@link java.net.http.HttpClient} with
@@ -17,20 +24,29 @@ import java.util.Set;
  */
 public class HttpClient {
 
-    private static final Set<Integer> RETRY_STATUS_CODES = Set.of(429, 502, 503, 504);
-    private static final int BACKOFF_BASE_MS = 500;
-    private static final int BACKOFF_MAX_MS = 30_000;
     private static final String SDK_VERSION_HEADER = "X-MeshAPI-SDK";
     private static final String SDK_VERSION_VALUE = "java/" + MeshAPI.VERSION;
+
+    // Gateway routing-outcome headers (FT-244) — present when the API key's
+    // routing_policy is active. See GatewayRoutingEvent.
+    private static final String ROUTING_ATTEMPTS_HEADER = "x-mesh-routing-attempts";
+    private static final String ROUTING_FALLBACK_HEADER = "x-mesh-routing-fallback";
+    private static final String SERVED_PROVIDER_HEADER = "x-mesh-served-provider";
+    private static final String REQUEST_ID_HEADER = "x-request-id";
 
     private final java.net.http.HttpClient javaClient;
     private final ObjectMapper mapper;
     private final String baseUrl;
     private final String token;
-    private final int maxRetries;
+    private final RetryPolicy retry;
+    private final FallbackConfig fallback;
+    private final Consumer<ResilienceEvent> logger;
+    private final boolean debug;
 
     public HttpClient(java.net.http.HttpClient javaClient, ObjectMapper mapper,
-                      String baseUrl, String token, int maxRetries, Duration timeout) {
+                      String baseUrl, String token, RetryPolicy retry,
+                      FallbackConfig fallback, Consumer<ResilienceEvent> logger,
+                      boolean debug, Duration timeout) {
         this.javaClient = javaClient != null ? javaClient :
                 java.net.http.HttpClient.newBuilder()
                         .connectTimeout(timeout)
@@ -39,7 +55,33 @@ public class HttpClient {
         this.mapper = mapper;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.token = token;
-        this.maxRetries = maxRetries;
+        this.retry = retry != null ? retry : RetryPolicy.resolve(null, null);
+        this.fallback = fallback;
+        this.logger = logger;
+        this.debug = debug;
+    }
+
+    /** Chat's client-side model-fallback chain (read by CompletionsResource). May be null. */
+    public FallbackConfig fallback() { return fallback; }
+
+    /**
+     * Publish a resilience event to the configured logger and, with
+     * {@code debug(true)}, as a readable stderr line. Gateway-routing lines are
+     * only printed when a server-side retry/fallback actually happened; the
+     * logger receives every event. Also used by CompletionsResource for
+     * fallback hops.
+     */
+    public void emit(ResilienceEvent event) {
+        if (logger != null) {
+            logger.accept(event);
+        }
+        if (!debug) {
+            return;
+        }
+        if (event instanceof GatewayRoutingEvent g && g.attempts <= 1 && !g.fallback) {
+            return;
+        }
+        System.err.println("[meshapi] " + ResilienceEvents.format(event));
     }
 
     // -----------------------------------------------------------------------
@@ -155,18 +197,12 @@ public class HttpClient {
                 .header("Authorization", "Bearer " + token)
                 .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                 .build();
-        try {
-            HttpResponse<byte[]> response = javaClient.send(req, HttpResponse.BodyHandlers.ofByteArray());
-            if (response.statusCode() >= 400) {
-                HttpResponse<String> errResp = toStringResponse(response, new String(response.body()));
-                throw MeshAPIError.fromResponse(errResp);
-            }
-            return response.body();
-        } catch (MeshAPIError e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("GET bytes failed: " + e.getMessage(), e);
+        HttpResponse<byte[]> response = executeWithRetry(req, HttpResponse.BodyHandlers.ofByteArray());
+        if (response.statusCode() >= 400) {
+            HttpResponse<String> errResp = toStringResponse(response, new String(response.body()));
+            throw MeshAPIError.fromResponse(errResp);
         }
+        return response.body();
     }
 
     public byte[] postBytes(String path, Object body) {
@@ -179,13 +215,13 @@ public class HttpClient {
                     .header("Content-Type", "application/json")
                     .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                     .build();
-            HttpResponse<byte[]> response = javaClient.send(req, HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<byte[]> response = executeWithRetry(req, HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() >= 400) {
                 HttpResponse<String> errResp = toStringResponse(response, new String(response.body()));
                 throw MeshAPIError.fromResponse(errResp);
             }
             return response.body();
-        } catch (MeshAPIError e) {
+        } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("POST bytes failed: " + e.getMessage(), e);
@@ -223,12 +259,12 @@ public class HttpClient {
                     .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                     .build();
 
-            HttpResponse<String> response = javaClient.send(req, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = executeWithRetry(req, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
                 throw MeshAPIError.fromResponse(response);
             }
             return mapper.readValue(response.body(), responseType);
-        } catch (MeshAPIError e) {
+        } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException("POST multipart failed: " + e.getMessage(), e);
@@ -255,7 +291,10 @@ public class HttpClient {
                 builder.POST(HttpRequest.BodyPublishers.ofString(json));
             }
             return execute(builder.build(), responseType);
-        } catch (MeshAPIError e) {
+        } catch (RuntimeException e) {
+            // MeshAPIError and transport failures (already wrapped by
+            // executeWithRetry, with the network cause preserved for the chat
+            // fallback chain's eligibility check) propagate as-is.
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(method + " " + path + " failed: " + e.getMessage(), e);
@@ -290,47 +329,112 @@ public class HttpClient {
     }
 
     private HttpResponse<String> executeWithRetry(HttpRequest req) {
+        return executeWithRetry(req, HttpResponse.BodyHandlers.ofString());
+    }
+
+    /**
+     * The single transport retry loop shared by every non-streaming request
+     * (JSON, raw-bytes, and multipart). Re-sends on the policy's status set
+     * (and, opt-in, on pre-response network errors), with exponential backoff,
+     * jitter, and {@code Retry-After} support. Timeouts and interrupts are
+     * NEVER retried. Emits a {@link RetryEvent} per re-send and a
+     * {@link GatewayRoutingEvent} when the final response carries
+     * {@code X-Mesh-Routing-*} headers. Returns the final response — callers
+     * handle non-2xx statuses.
+     */
+    private <T> HttpResponse<T> executeWithRetry(HttpRequest req, HttpResponse.BodyHandler<T> handler) {
+        String method = req.method();
+        String path = req.uri().getPath();
+        int maxRetries = retry.maxRetries();
         int attempt = 0;
         while (true) {
+            HttpResponse<T> response;
             try {
-                HttpResponse<String> response =
-                        javaClient.send(req, HttpResponse.BodyHandlers.ofString());
-
-                if (RETRY_STATUS_CODES.contains(response.statusCode()) && attempt < maxRetries) {
-                    long delayMs = computeDelay(attempt,
-                            retryAfterFromResponse(response));
-                    Thread.sleep(delayMs);
-                    attempt++;
-                    continue;
-                }
-                return response;
+                response = javaClient.send(req, handler);
             } catch (InterruptedException e) {
+                // Interrupts always propagate — never retried.
                 Thread.currentThread().interrupt();
                 throw new RuntimeException("request interrupted", e);
+            } catch (HttpTimeoutException e) {
+                // Timeouts always propagate — never retried.
+                throw new RuntimeException("request timed out: " + e.getMessage(), e);
             } catch (Exception e) {
-                if (attempt < maxRetries) {
-                    try { Thread.sleep(computeDelay(attempt, null)); } catch (InterruptedException ie) {
-                        Thread.currentThread().interrupt();
-                        throw new RuntimeException("interrupted during retry", ie);
-                    }
-                    attempt++;
-                    continue;
+                // Other pre-response failures (DNS, connection refused/reset)
+                // retry only when opted in — they are ambiguous for
+                // non-idempotent POSTs.
+                if (!retry.retryOnNetworkError() || attempt >= maxRetries) {
+                    throw new RuntimeException("request failed: " + e.getMessage(), e);
                 }
-                throw new RuntimeException("request failed after retries: " + e.getMessage(), e);
+                long delayMs = computeDelay(attempt, null);
+                emit(new RetryEvent(method, path, attempt + 1, maxRetries,
+                        null, null, delayMs, "network-error"));
+                sleepBeforeRetry(delayMs);
+                attempt++;
+                continue;
             }
+
+            if (retry.retryOnStatus().contains(response.statusCode()) && attempt < maxRetries) {
+                long delayMs = computeDelay(attempt, retryAfterFromResponse(response));
+                emit(new RetryEvent(method, path, attempt + 1, maxRetries,
+                        response.statusCode(),
+                        response.headers().firstValue(REQUEST_ID_HEADER).orElse(null),
+                        delayMs, "status"));
+                sleepBeforeRetry(delayMs);
+                attempt++;
+                continue;
+            }
+
+            emitGatewayRouting(path, response);
+            return response;
         }
     }
 
-    private static long computeDelay(int attempt, Integer retryAfterSec) {
+    /**
+     * Surface the gateway's own routing outcome (server-side retry / provider
+     * fallback, FT-244) when the response reports it. Header-absence means the
+     * key has no active routing policy — nothing is emitted.
+     */
+    private void emitGatewayRouting(String path, HttpResponse<?> response) {
+        String attempts = response.headers().firstValue(ROUTING_ATTEMPTS_HEADER).orElse(null);
+        if (attempts == null) {
+            return;
+        }
+        int parsed;
+        try {
+            parsed = Integer.parseInt(attempts.trim());
+        } catch (NumberFormatException e) {
+            parsed = 1;
+        }
+        emit(new GatewayRoutingEvent(
+                path,
+                parsed > 0 ? parsed : 1,
+                "true".equals(response.headers().firstValue(ROUTING_FALLBACK_HEADER).orElse(null)),
+                response.headers().firstValue(SERVED_PROVIDER_HEADER).orElse(null),
+                response.headers().firstValue(REQUEST_ID_HEADER).orElse(null)));
+    }
+
+    private static void sleepBeforeRetry(long delayMs) {
+        try {
+            Thread.sleep(delayMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("interrupted during retry", e);
+        }
+    }
+
+    private long computeDelay(int attempt, Integer retryAfterSec) {
         long baseMs = retryAfterSec != null
                 ? (long) retryAfterSec * 1000
-                : (long) (BACKOFF_BASE_MS * Math.pow(2, attempt));
-        long capped = Math.min(baseMs, BACKOFF_MAX_MS);
+                : (long) (retry.backoffBaseMs() * Math.pow(2, attempt));
+        long capped = Math.min(baseMs, retry.backoffMaxMs());
         double jitter = capped * (0.8 + Math.random() * 0.4); // ±20%
         return (long) jitter;
     }
 
-    private static Integer retryAfterFromResponse(HttpResponse<String> resp) {
+    private Integer retryAfterFromResponse(HttpResponse<?> resp) {
+        if (!retry.respectRetryAfter()) {
+            return null;
+        }
         return resp.headers().firstValue("retry-after")
                 .map(v -> {
                     try { return (int) Math.ceil(Double.parseDouble(v)); }

@@ -17,8 +17,13 @@ import com.meshapi.sdk.resources.VideosResource;
 import com.meshapi.sdk.resources.ModerationsResource;
 import com.meshapi.sdk.resources.RouterResource;
 import com.meshapi.sdk.resources.WebResource;
+import com.meshapi.sdk.resilience.FallbackConfig;
+import com.meshapi.sdk.resilience.FallbackEvent;
+import com.meshapi.sdk.resilience.ResilienceEvent;
+import com.meshapi.sdk.resilience.RetryPolicy;
 
 import java.time.Duration;
+import java.util.function.Consumer;
 
 /**
  * MeshAPI SDK client.
@@ -74,7 +79,10 @@ public class MeshAPI {
                 mapper,
                 builder.baseUrl,
                 builder.token,
-                builder.maxRetries,
+                RetryPolicy.resolve(builder.retry, builder.maxRetries),
+                builder.fallback,
+                builder.logger,
+                builder.debug,
                 Duration.ofMillis(builder.timeoutMs)
         );
         this.chat = new ChatResource(http);
@@ -120,7 +128,11 @@ public class MeshAPI {
         private String baseUrl;
         private String token;
         private long timeoutMs = 60_000;
-        private int maxRetries = 3;
+        private Integer maxRetries;
+        private RetryPolicy retry;
+        private FallbackConfig fallback;
+        private Consumer<ResilienceEvent> logger;
+        private boolean debug;
         private java.net.http.HttpClient javaHttpClient;
 
         /** The MeshAPI gateway base URL (required). */
@@ -132,8 +144,49 @@ public class MeshAPI {
         /** Request timeout in milliseconds (default 60_000). */
         public Builder timeoutMs(long ms) { this.timeoutMs = ms; return this; }
 
-        /** Number of retry attempts on retryable errors (default 3, use 0 to disable). */
+        /**
+         * Number of retry attempts on retryable errors (default 3, use 0 to disable).
+         *
+         * @deprecated Use {@link #retry(RetryPolicy)} — this alias maps onto
+         *     {@code RetryPolicy.maxRetries}, and an explicit
+         *     {@code retry(...)} value wins.
+         */
+        @Deprecated
         public Builder maxRetries(int retries) { this.maxRetries = retries; return this; }
+
+        /**
+         * Transport retry policy: which statuses to retry, backoff shape,
+         * whether to honour {@code Retry-After}, and (opt-in) network-error
+         * retry. Streaming requests are never retried.
+         */
+        public Builder retry(RetryPolicy retry) { this.retry = retry; return this; }
+
+        /**
+         * Client-side model-fallback chain for non-streaming
+         * {@code chat().completions().create(...)}: when the primary model's
+         * request exhausts its retries on a transient error, the SDK re-issues
+         * it against each model in the chain until one succeeds. Each hop
+         * fires a {@link FallbackEvent}.
+         */
+        public Builder fallback(FallbackConfig fallback) { this.fallback = fallback; return this; }
+
+        /**
+         * Structured sink for resilience events — every transport retry, every
+         * fallback hop, and every gateway-side routing outcome (parsed from
+         * the {@code X-Mesh-Routing-*} response headers). Use this to pipe
+         * into your own logging framework; use {@link #debug(boolean)} for
+         * ready-made readable lines instead.
+         */
+        public Builder logger(Consumer<ResilienceEvent> logger) { this.logger = logger; return this; }
+
+        /**
+         * Print readable resilience lines to stderr
+         * ({@code [meshapi] retrying POST …}). Gateway-routing lines are
+         * printed only when interesting (a retry or a provider fallback
+         * actually happened). Independent of {@link #logger(Consumer)}.
+         * Default false.
+         */
+        public Builder debug(boolean debug) { this.debug = debug; return this; }
 
         /** Inject a custom {@link java.net.http.HttpClient} (useful for testing). */
         public Builder httpClient(java.net.http.HttpClient client) {

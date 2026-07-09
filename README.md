@@ -353,18 +353,99 @@ try {
 }
 ```
 
-## Retry / backoff
+## Resilience: retry, fallback, and observability
 
-Retries on 429/502/503/504 with exponential backoff (default 3 retries, 500 ms base, 30 s max, ±20% jitter).
+### Transport retry
+
+Every non-streaming request retries on 429/502/503/504 with exponential
+backoff + jitter, honouring `Retry-After` (default 3 retries, 500 ms base,
+30 s max). **Streams never retry.** The policy is configurable:
 
 ```java
+import com.meshapi.sdk.resilience.RetryPolicy;
+
 MeshAPI client = MeshAPI.builder()
     .baseUrl("...")
     .token("...")
-    .maxRetries(5)    // 0 to disable
-    .timeoutMs(30_000)
+    .retry(RetryPolicy.builder()
+        .maxRetries(5)                 // default 3
+        .retryOnStatus(429, 503)       // default 429, 502, 503, 504
+        .backoffBaseMs(250)            // default 500
+        .backoffMaxMs(10_000)          // default 30_000
+        .respectRetryAfter(true)       // default true
+        .retryOnNetworkError(true)     // default false — POSTs are non-idempotent
+        .build())
     .build();
 ```
+
+(The builder's `maxRetries(int)` still works and maps onto
+`RetryPolicy.maxRetries`; an explicit `retry(...)` value wins.)
+
+Network errors (DNS failure, connection refused/reset) are **not** retried
+unless you opt in via `retryOnNetworkError(true)`. Timeouts and thread
+interrupts are never retried.
+
+### Model fallback chain
+
+`chat().completions().create(...)` (non-streaming) can fall back to other
+models when the primary fails with a transient error (default 502/503/504,
+after transport retries). Configure a chain client-wide or per call:
+
+```java
+import com.meshapi.sdk.resilience.FallbackConfig;
+
+MeshAPI client = MeshAPI.builder()
+    .baseUrl("...")
+    .token("...")
+    .fallback(FallbackConfig.builder()
+        .models("anthropic/claude-sonnet-5", "mistral/mistral-large")
+        .build())
+    .build();
+
+// Per-call override (never sent to the server):
+client.chat().completions().create(ChatCompletionRequest.builder()
+    .model("openai/gpt-4o")
+    .addMessage(ChatMessage.user("Hello!"))
+    .fallbackModels("anthropic/claude-sonnet-5")
+    .build());
+```
+
+Terminal errors (auth, validation, billing) never advance the chain. This is
+distinct from the `models` request param, which is a server-side
+provider-handled list.
+
+### Seeing what happened: `debug` and `logger`
+
+With `.debug(true)`, every retry and fallback prints a readable line to stderr:
+
+```
+[meshapi] retrying POST /v1/chat/completions (attempt 1/4 failed: 503, next in 512ms) [req_abc]
+[meshapi] falling back openai/gpt-4o → anthropic/claude-sonnet-5 (1/2: 503 provider_not_available)
+[meshapi] gateway served /v1/chat/completions via bedrock (2 attempts, provider fallback) [req_abc]
+```
+
+For structured logging, pass a `logger` — it receives every `RetryEvent`,
+`FallbackEvent`, and `GatewayRoutingEvent`:
+
+```java
+import com.meshapi.sdk.resilience.*;
+
+MeshAPI client = MeshAPI.builder()
+    .baseUrl("...")
+    .token("...")
+    .logger(event -> {
+        if (event instanceof RetryEvent e) log.warn("meshapi retry: {}", e);
+        if (event instanceof FallbackEvent e) log.warn("meshapi fallback: {}", e);
+        if (event instanceof GatewayRoutingEvent e && e.fallback) {
+            log.info("served by {} after {} attempts", e.servedProvider, e.attempts);
+        }
+    })
+    .build();
+```
+
+`GatewayRoutingEvent`s report the **server-side** resilience the gateway
+applied for the request (parsed from the `X-Mesh-Routing-*` response headers,
+present when the API key's `routing_policy` is active).
 
 **Streams do not retry.** On failure, `Iterator.next()` throws `MeshAPIError`.
 
