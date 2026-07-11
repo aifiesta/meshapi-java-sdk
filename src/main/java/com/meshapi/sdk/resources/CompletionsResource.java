@@ -73,40 +73,52 @@ public class CompletionsResource {
     public <T> T parse(ChatCompletionRequest request, Class<T> type, StructuredParseOptions options) {
         ObjectMapper mapper = http.getObjectMapper();
 
-        Map<String, Object> schema = options.getSchema() != null
-                ? options.getSchema()
-                : StructuredOutputs.schemaForClass(type);
-        String name = options.getSchemaName() != null ? options.getSchemaName() : "response";
+        // Snapshot the caller's state: parse() installs a schema + retry turns on
+        // the request while it runs, but must leave the caller's object untouched
+        // once it returns (or throws). Restored in the finally block below.
+        List<ChatMessage> originalMessages = request.getMessages();
+        Map<String, Object> originalResponseFormat = request.getResponseFormat();
 
-        Map<String, Object> jsonSchema = new LinkedHashMap<>();
-        jsonSchema.put("name", name);
-        jsonSchema.put("schema", schema);
-        Map<String, Object> responseFormat = new LinkedHashMap<>();
-        responseFormat.put("type", "json_schema");
-        responseFormat.put("json_schema", jsonSchema);
-        request.setResponseFormat(responseFormat);
+        try {
+            Map<String, Object> schema = options.getSchema() != null
+                    ? options.getSchema()
+                    : StructuredOutputs.schemaForClass(type);
+            String name = options.getSchemaName() != null ? options.getSchemaName() : "response";
 
-        // Work on a copy so retries don't mutate the caller's message list.
-        List<ChatMessage> messages = new ArrayList<>(request.getMessages());
-        request.setMessages(messages);
-        String model = request.getModel();
+            Map<String, Object> jsonSchema = new LinkedHashMap<>();
+            jsonSchema.put("name", name);
+            jsonSchema.put("schema", schema);
+            Map<String, Object> responseFormat = new LinkedHashMap<>();
+            responseFormat.put("type", "json_schema");
+            responseFormat.put("json_schema", jsonSchema);
+            request.setResponseFormat(responseFormat);
 
-        int attempt = 0;
-        while (true) {
-            ChatCompletionResponse resp = create(request);
-            String content = StructuredOutputs.extractContent(resp);
-            try {
-                return mapper.readValue(content, type);
-            } catch (JsonProcessingException e) {
-                boolean notJson = StructuredOutputs.isNotJson(e, content);
-                if (attempt >= options.getMaxRetries()) {
-                    throw new StructuredOutputError(
-                            StructuredOutputs.errorMessage(model, notJson, e), e);
+            // Work on a copy so retries don't mutate the caller's message list.
+            List<ChatMessage> messages = new ArrayList<>(originalMessages);
+            request.setMessages(messages);
+            String model = request.getModel();
+
+            int attempt = 0;
+            while (true) {
+                ChatCompletionResponse resp = create(request);
+                String content = StructuredOutputs.extractContent(resp);
+                try {
+                    return mapper.readValue(content, type);
+                } catch (JsonProcessingException e) {
+                    boolean notJson = StructuredOutputs.isNotJson(e, content);
+                    if (attempt >= options.getMaxRetries()) {
+                        throw new StructuredOutputError(
+                                StructuredOutputs.errorMessage(model, notJson, e), e);
+                    }
+                    attempt++;
+                    messages.add(ChatMessage.assistant(content));
+                    messages.add(ChatMessage.user(StructuredOutputs.correctionPrompt(e)));
                 }
-                attempt++;
-                messages.add(ChatMessage.assistant(content));
-                messages.add(ChatMessage.user(StructuredOutputs.correctionPrompt(e)));
             }
+        } finally {
+            // Leave the caller's request exactly as it was handed to us.
+            request.setMessages(originalMessages);
+            request.setResponseFormat(originalResponseFormat);
         }
     }
 }

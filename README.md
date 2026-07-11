@@ -93,6 +93,14 @@ client.chat().completions().parse(request, Country.class,
 > Jackson does not enforce required fields — a missing field decodes to its
 > default. Type mismatches and non-JSON prose are caught.
 
+> **Schema derivation is field-based.** The auto-derived schema reads a POJO's
+> declared fields and field-level `@JsonProperty` / `@JsonIgnore` only — it does
+> not inspect getters, setters, or constructor (`@JsonCreator`) parameters. If a
+> type exposes its Jackson properties through accessors or a constructor rather
+> than fields, pass an explicit schema with `StructuredParseOptions.schema(...)`.
+> `parse` also leaves the request you pass in unchanged: the schema and any retry
+> turns are applied to an internal copy, so the same request object can be reused.
+
 ### When the model doesn't support structured output
 
 If decoding fails after any retries, `parse` throws `StructuredOutputError` (a

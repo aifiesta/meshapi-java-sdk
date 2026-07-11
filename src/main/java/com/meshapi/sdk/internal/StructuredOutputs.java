@@ -25,6 +25,15 @@ import java.util.Set;
  * (respecting Jackson's {@code @JsonProperty} / {@code @JsonIgnore}), and shared
  * parse/error utilities. No external dependency — Jackson (already a dep) does
  * the decoding; this reflects the request schema.
+ *
+ * <p><strong>Reflection scope:</strong> the schema is derived from a class's
+ * declared <em>fields</em> and field-level {@code @JsonProperty} / {@code @JsonIgnore}
+ * annotations only. It does not introspect getters, setters, or constructor
+ * parameters, which Jackson also uses when (de)serializing. If your POJO exposes
+ * its Jackson properties through getters/setters or {@code @JsonCreator}/constructor
+ * annotations rather than fields, the generated schema may not match how Jackson
+ * decodes the response — pass an explicit schema via
+ * {@link com.meshapi.sdk.types.chat.StructuredParseOptions#schema(java.util.Map)}.
  */
 public final class StructuredOutputs {
 
@@ -58,13 +67,26 @@ public final class StructuredOutputs {
             return leaf("number");
         }
         if (c.isEnum()) {
-            List<String> names = new ArrayList<>();
+            List<String> values = new ArrayList<>();
             for (Object k : c.getEnumConstants()) {
-                names.add(((Enum<?>) k).name());
+                // Jackson honors @JsonProperty on enum constants, so the serialized
+                // value can differ from the constant name — mirror that in the schema.
+                String constName = ((Enum<?>) k).name();
+                String value = constName;
+                try {
+                    Field ef = c.getField(constName);
+                    JsonProperty jp = ef.getAnnotation(JsonProperty.class);
+                    if (jp != null && !jp.value().isEmpty()) {
+                        value = jp.value();
+                    }
+                } catch (NoSuchFieldException ignored) {
+                    // fall back to the constant name
+                }
+                values.add(value);
             }
             Map<String, Object> s = new LinkedHashMap<>();
             s.put("type", "string");
-            s.put("enum", names);
+            s.put("enum", values);
             return s;
         }
         if (c.isArray()) {
@@ -81,6 +103,13 @@ public final class StructuredOutputs {
         }
         if (Map.class.isAssignableFrom(c) || c == Object.class) {
             return leaf("object");
+        }
+        // Temporal types: Jackson decodes these from strings (or numbers), not
+        // objects — so a POJO/object schema would be wrong. Map them to string.
+        if (java.util.Date.class.isAssignableFrom(c)
+                || java.util.Calendar.class.isAssignableFrom(c)
+                || java.time.temporal.Temporal.class.isAssignableFrom(c)) {
+            return leaf("string");
         }
         // POJO
         if (seen.contains(c)) {
