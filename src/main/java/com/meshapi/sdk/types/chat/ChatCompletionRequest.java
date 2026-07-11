@@ -36,6 +36,7 @@ public class ChatCompletionRequest {
     @JsonProperty("cache") private Boolean cache;
     @JsonProperty("reasoning_effort") private String reasoningEffort;
     @JsonProperty("timeout") private Integer timeout;
+    @JsonProperty("response_format") private Map<String, Object> responseFormat;
 
     private ChatCompletionRequest() {}
 
@@ -43,6 +44,9 @@ public class ChatCompletionRequest {
     public String getModel() { return model; }
     public Boolean getStream() { return stream; }
     public void setStream(boolean stream) { this.stream = stream; }
+    public Map<String, Object> getResponseFormat() { return responseFormat; }
+    public void setResponseFormat(Map<String, Object> responseFormat) { this.responseFormat = responseFormat; }
+    public void setMessages(List<ChatMessage> messages) { this.messages = messages; }
 
     public static Builder builder() { return new Builder(); }
 
@@ -73,6 +77,8 @@ public class ChatCompletionRequest {
         /** Reasoning effort hint: "high", "medium", "low", or "none". */
         public Builder reasoningEffort(String reasoningEffort) { req.reasoningEffort = reasoningEffort; return this; }
         public Builder timeout(int timeoutSeconds) { req.timeout = timeoutSeconds; return this; }
+        /** Structured-output schema, e.g. {@code {"type":"json_schema","json_schema":{...}}}. */
+        public Builder responseFormat(Map<String, Object> responseFormat) { req.responseFormat = responseFormat; return this; }
 
         public Builder addMessage(ChatMessage msg) {
             messages.add(msg);

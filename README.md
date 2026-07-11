@@ -57,6 +57,62 @@ while (it.hasNext()) {
 }
 ```
 
+## Structured outputs
+
+`parse(request, Type.class)` constrains the model to a JSON schema and decodes
+the reply into your type. The schema is derived from the class by reflection
+(respecting Jackson's `@JsonProperty`) — define a POJO and `parse` builds the
+schema and the typed result.
+
+```java
+public class Country {
+    @JsonProperty("country") public String country;
+    @JsonProperty("capital") public String capital;
+    @JsonProperty("population_millions") public double populationMillions;
+}
+
+Country country = client.chat().completions().parse(
+    ChatCompletionRequest.builder()
+        .model("openai/gpt-4o-mini")
+        .addMessage(ChatMessage.user("Give me structured facts about France."))
+        .build(),
+    Country.class
+);
+System.out.println(country.capital + " " + country.populationMillions); // typed
+```
+
+Options via `StructuredParseOptions`: `maxRetries(n)` re-prompts on a decode
+failure (default 0, each retry is a billed call); `schema(Map)` overrides the
+auto-derived schema; `schemaName(String)` sets the schema label.
+
+```java
+client.chat().completions().parse(request, Country.class,
+    StructuredParseOptions.create().maxRetries(2));
+```
+
+> Jackson does not enforce required fields — a missing field decodes to its
+> default. Type mismatches and non-JSON prose are caught.
+
+### When the model doesn't support structured output
+
+If decoding fails after any retries, `parse` throws `StructuredOutputError` (a
+`MeshAPIError` subclass; the underlying Jackson error is on `getCause()`). When
+the model returns plain text instead of JSON — usually because it doesn't support
+`response_format` — the message points at the model's support:
+
+```java
+try {
+    client.chat().completions().parse(request, Country.class);
+} catch (StructuredOutputError e) {
+    System.err.println(e.getMessage());
+    // "… the model returned text that is not valid JSON … Check the model's
+    //  support on the Models page (https://app.meshapi.ai/…/models) …"
+}
+```
+
+Check a model's `supports_structured_output` flag via `client.models()`, or on the
+Models page in your dashboard. `parse` is non-streaming.
+
 ## Responses API (reasoning models)
 
 ```java

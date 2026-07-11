@@ -42,6 +42,11 @@ public class HttpClient {
         this.maxRetries = maxRetries;
     }
 
+    /** The configured Jackson mapper, shared for structured-output parsing. */
+    public ObjectMapper getObjectMapper() {
+        return mapper;
+    }
+
     // -----------------------------------------------------------------------
     // Public HTTP methods
     // -----------------------------------------------------------------------
