@@ -39,6 +39,18 @@ class StructuredParseTest {
         INACTIVE
     }
 
+    enum Priority {
+        LOW(1), HIGH(2);
+        private final int code;
+        Priority(int code) { this.code = code; }
+        @com.fasterxml.jackson.annotation.JsonValue
+        public int code() { return code; }
+    }
+
+    public static class Ticket {
+        @JsonProperty("priority") public Priority priority;
+    }
+
     public static class Event {
         @JsonProperty("when") public java.time.Instant when;
     }
@@ -72,9 +84,11 @@ class StructuredParseTest {
                 .build();
     }
 
+    private static final ObjectMapper MAPPER = HttpClient.newDefaultMapper();
+
     @SuppressWarnings("unchecked")
     private static CompletionsResource resourceReturning(HttpClient http, ChatCompletionResponse... responses) {
-        when(http.getObjectMapper()).thenReturn(new ObjectMapper());
+        when(http.getObjectMapper()).thenReturn(MAPPER);
         var stub = when(http.post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class)));
         for (ChatCompletionResponse r : responses) {
             stub = stub.thenReturn(r);
@@ -90,11 +104,11 @@ class StructuredParseTest {
 
     /**
      * Like {@link #resourceReturning} but snapshots what was actually on the request
-     * at call time — parse() restores the caller's request afterward, so post-call
-     * inspection no longer sees the schema / retry turns.
+     * at call time — parse() works on a private copy of the caller's request, so
+     * post-call inspection of the original never sees the schema / retry turns.
      */
     private static CompletionsResource capturing(HttpClient http, Sent sent, ChatCompletionResponse... responses) {
-        when(http.getObjectMapper()).thenReturn(new ObjectMapper());
+        when(http.getObjectMapper()).thenReturn(MAPPER);
         AtomicInteger i = new AtomicInteger();
         when(http.post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class)))
                 .thenAnswer(inv -> {
@@ -112,7 +126,7 @@ class StructuredParseTest {
     @Test
     @SuppressWarnings("unchecked")
     void schemaForClassReflectsFields() {
-        Map<String, Object> s = StructuredOutputs.schemaForClass(Person.class);
+        Map<String, Object> s = StructuredOutputs.schemaForClass(Person.class, MAPPER);
         assertEquals("object", s.get("type"));
         assertEquals(false, s.get("additionalProperties"));
         Map<String, Object> props = (Map<String, Object>) s.get("properties");
@@ -223,11 +237,37 @@ class StructuredParseTest {
     @Test
     @SuppressWarnings("unchecked")
     void enumSchemaUsesJsonPropertyValue() {
-        Map<String, Object> s = StructuredOutputs.schemaForClass(Status.class);
+        Map<String, Object> s = StructuredOutputs.schemaForClass(Status.class, MAPPER);
         assertEquals("string", s.get("type"));
-        List<String> values = (List<String>) s.get("enum");
+        List<Object> values = (List<Object>) s.get("enum");
         assertTrue(values.contains("active"), values.toString());   // annotated -> @JsonProperty value
         assertTrue(values.contains("INACTIVE"), values.toString()); // unannotated -> constant name
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void enumSchemaHonorsJsonValueCodes() {
+        Map<String, Object> s = StructuredOutputs.schemaForClass(Priority.class, MAPPER);
+        assertEquals("integer", s.get("type"));
+        List<Object> values = (List<Object>) s.get("enum");
+        assertTrue(values.contains(1) && values.contains(2), values.toString());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void parseDecodesJsonValueEnumFromNumericCode() {
+        HttpClient http = mock(HttpClient.class);
+        Sent sent = new Sent();
+        CompletionsResource comp = capturing(http, sent, resp("{\"priority\":2}"));
+
+        Ticket got = comp.parse(req(), Ticket.class);
+
+        assertEquals(Priority.HIGH, got.priority);
+        // the wire schema advertises the numeric codes, not constant names
+        Map<String, Object> js = (Map<String, Object>) sent.responseFormat.get(0).get("json_schema");
+        Map<String, Object> priority = (Map<String, Object>)
+                ((Map<String, Object>) ((Map<String, Object>) js.get("schema")).get("properties")).get("priority");
+        assertEquals("integer", priority.get("type"));
     }
 
     // ── temporal types (finding 3) ──────────────────────────────────────────────
@@ -235,9 +275,19 @@ class StructuredParseTest {
     @Test
     @SuppressWarnings("unchecked")
     void temporalFieldGetsStringSchema() {
-        Map<String, Object> s = StructuredOutputs.schemaForClass(Event.class);
+        Map<String, Object> s = StructuredOutputs.schemaForClass(Event.class, MAPPER);
         Map<String, Object> props = (Map<String, Object>) s.get("properties");
         assertEquals("string", ((Map<String, Object>) props.get("when")).get("type"));
+    }
+
+    @Test
+    void parseDecodesInstantFromIsoString() {
+        HttpClient http = mock(HttpClient.class);
+        CompletionsResource comp = resourceReturning(http, resp("{\"when\":\"2024-01-01T00:00:00Z\"}"));
+
+        Event got = comp.parse(req(), Event.class);
+
+        assertEquals(java.time.Instant.parse("2024-01-01T00:00:00Z"), got.when);
     }
 
     // ── request isolation (finding 4) ───────────────────────────────────────────

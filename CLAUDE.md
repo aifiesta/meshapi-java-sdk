@@ -4,7 +4,7 @@ Official Java client for the MeshAPI AI model gateway.
 
 - **Group / artifact**: `ai.meshapi:meshapi-java-sdk`
 - **Java version**: 17+
-- **Runtime dependencies**: `jackson-databind`
+- **Runtime dependencies**: `jackson-databind`, `jackson-datatype-jsr310`
 - **Build tool**: Maven
 
 ## Project layout

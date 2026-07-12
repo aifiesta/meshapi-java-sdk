@@ -48,6 +48,44 @@ public class ChatCompletionRequest {
     public void setResponseFormat(Map<String, Object> responseFormat) { this.responseFormat = responseFormat; }
     public void setMessages(List<ChatMessage> messages) { this.messages = messages; }
 
+    /**
+     * Shallow copy with an independent messages list. {@code parse()} works on a
+     * copy so it never mutates the request handed in by the caller — the original
+     * stays safe to reuse concurrently with {@code create()}, {@code stream()},
+     * or another {@code parse()}.
+     */
+    public ChatCompletionRequest copy() {
+        ChatCompletionRequest r = new ChatCompletionRequest();
+        r.messages = this.messages == null ? null : new ArrayList<>(this.messages);
+        r.model = this.model;
+        r.stream = this.stream;
+        r.template = this.template;
+        r.variables = this.variables;
+        r.sessionId = this.sessionId;
+        r.temperature = this.temperature;
+        r.maxTokens = this.maxTokens;
+        r.topP = this.topP;
+        r.frequencyPenalty = this.frequencyPenalty;
+        r.presencePenalty = this.presencePenalty;
+        r.stop = this.stop;
+        r.seed = this.seed;
+        r.tools = this.tools;
+        r.toolChoice = this.toolChoice;
+        r.transforms = this.transforms;
+        r.models = this.models;
+        r.user = this.user;
+        r.modality = this.modality;
+        r.image = this.image;
+        r.asyncMode = this.asyncMode;
+        r.modalities = this.modalities;
+        r.audio = this.audio;
+        r.cache = this.cache;
+        r.reasoningEffort = this.reasoningEffort;
+        r.timeout = this.timeout;
+        r.responseFormat = this.responseFormat;
+        return r;
+    }
+
     public static Builder builder() { return new Builder(); }
 
     public static final class Builder {

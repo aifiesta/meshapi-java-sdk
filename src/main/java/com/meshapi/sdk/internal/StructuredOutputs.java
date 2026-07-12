@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshapi.sdk.types.chat.ChatCompletionResponse;
 
 import java.lang.reflect.Field;
@@ -22,7 +24,9 @@ import java.util.Set;
 
 /**
  * Helpers for structured outputs: build a JSON schema from a class by reflection
- * (respecting Jackson's {@code @JsonProperty} / {@code @JsonIgnore}), and shared
+ * (respecting Jackson's {@code @JsonProperty} / {@code @JsonIgnore}; enum values
+ * are derived by serializing each constant through the configured mapper, so
+ * {@code @JsonValue} and enum-related mapper settings are honored), and shared
  * parse/error utilities. No external dependency — Jackson (already a dep) does
  * the decoding; this reflects the request schema.
  *
@@ -46,11 +50,11 @@ public final class StructuredOutputs {
     // Reflection: Class -> JSON schema
     // -----------------------------------------------------------------------
 
-    public static Map<String, Object> schemaForClass(Class<?> type) {
-        return schemaForClass(type, new HashSet<>());
+    public static Map<String, Object> schemaForClass(Class<?> type, ObjectMapper mapper) {
+        return schemaForClass(type, mapper, new HashSet<>());
     }
 
-    private static Map<String, Object> schemaForClass(Class<?> c, Set<Class<?>> seen) {
+    private static Map<String, Object> schemaForClass(Class<?> c, ObjectMapper mapper, Set<Class<?>> seen) {
         if (c == String.class || c == char.class || c == Character.class) {
             return leaf("string");
         }
@@ -67,32 +71,47 @@ public final class StructuredOutputs {
             return leaf("number");
         }
         if (c.isEnum()) {
-            List<String> values = new ArrayList<>();
+            // Serialize each constant through the configured mapper so the schema
+            // matches whatever Jackson will actually accept back — @JsonProperty,
+            // @JsonValue (including non-string codes), and mapper enum settings.
+            List<Object> values = new ArrayList<>();
+            boolean allText = true;
+            boolean allIntegral = true;
+            boolean allNumeric = true;
             for (Object k : c.getEnumConstants()) {
-                // Jackson honors @JsonProperty on enum constants, so the serialized
-                // value can differ from the constant name — mirror that in the schema.
-                String constName = ((Enum<?>) k).name();
-                String value = constName;
-                try {
-                    Field ef = c.getField(constName);
-                    JsonProperty jp = ef.getAnnotation(JsonProperty.class);
-                    if (jp != null && !jp.value().isEmpty()) {
-                        value = jp.value();
+                JsonNode node = mapper.valueToTree(k);
+                if (node.isTextual()) {
+                    values.add(node.asText());
+                    allIntegral = false;
+                    allNumeric = false;
+                } else if (node.isNumber()) {
+                    values.add(node.numberValue());
+                    allText = false;
+                    if (!node.isIntegralNumber()) {
+                        allIntegral = false;
                     }
-                } catch (NoSuchFieldException ignored) {
-                    // fall back to the constant name
+                } else {
+                    values.add(mapper.convertValue(node, Object.class));
+                    allText = false;
+                    allIntegral = false;
+                    allNumeric = false;
                 }
-                values.add(value);
             }
             Map<String, Object> s = new LinkedHashMap<>();
-            s.put("type", "string");
+            if (allText) {
+                s.put("type", "string");
+            } else if (allIntegral) {
+                s.put("type", "integer");
+            } else if (allNumeric) {
+                s.put("type", "number");
+            }
             s.put("enum", values);
             return s;
         }
         if (c.isArray()) {
             Map<String, Object> s = new LinkedHashMap<>();
             s.put("type", "array");
-            s.put("items", schemaForClass(c.getComponentType(), seen));
+            s.put("items", schemaForClass(c.getComponentType(), mapper, seen));
             return s;
         }
         if (Collection.class.isAssignableFrom(c)) {
@@ -117,37 +136,37 @@ public final class StructuredOutputs {
         }
         seen.add(c);
         try {
-            return structSchema(c, seen);
+            return structSchema(c, mapper, seen);
         } finally {
             seen.remove(c);
         }
     }
 
-    private static Map<String, Object> schemaForType(Type t, Set<Class<?>> seen) {
+    private static Map<String, Object> schemaForType(Type t, ObjectMapper mapper, Set<Class<?>> seen) {
         if (t instanceof ParameterizedType) {
             ParameterizedType pt = (ParameterizedType) t;
             Class<?> raw = (Class<?>) pt.getRawType();
             if (Collection.class.isAssignableFrom(raw)) {
                 Map<String, Object> s = new LinkedHashMap<>();
                 s.put("type", "array");
-                s.put("items", schemaForType(pt.getActualTypeArguments()[0], seen));
+                s.put("items", schemaForType(pt.getActualTypeArguments()[0], mapper, seen));
                 return s;
             }
             if (Map.class.isAssignableFrom(raw)) {
                 Map<String, Object> s = new LinkedHashMap<>();
                 s.put("type", "object");
-                s.put("additionalProperties", schemaForType(pt.getActualTypeArguments()[1], seen));
+                s.put("additionalProperties", schemaForType(pt.getActualTypeArguments()[1], mapper, seen));
                 return s;
             }
-            return schemaForClass(raw, seen);
+            return schemaForClass(raw, mapper, seen);
         }
         if (t instanceof Class) {
-            return schemaForClass((Class<?>) t, seen);
+            return schemaForClass((Class<?>) t, mapper, seen);
         }
         return new LinkedHashMap<>(); // wildcard / type variable -> any
     }
 
-    private static Map<String, Object> structSchema(Class<?> c, Set<Class<?>> seen) {
+    private static Map<String, Object> structSchema(Class<?> c, ObjectMapper mapper, Set<Class<?>> seen) {
         Map<String, Object> props = new LinkedHashMap<>();
         List<String> required = new ArrayList<>();
         for (Class<?> k = c; k != null && k != Object.class; k = k.getSuperclass()) {
@@ -164,7 +183,7 @@ public final class StructuredOutputs {
                 if (props.containsKey(name)) {
                     continue; // subclass field already recorded
                 }
-                props.put(name, schemaForType(f.getGenericType(), seen));
+                props.put(name, schemaForType(f.getGenericType(), mapper, seen));
                 required.add(name);
             }
         }

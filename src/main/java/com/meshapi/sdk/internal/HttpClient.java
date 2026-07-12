@@ -47,6 +47,16 @@ public class HttpClient {
         return mapper;
     }
 
+    /**
+     * The SDK's default mapper configuration: java.time (JSR-310) support is
+     * registered so temporal fields ({@code Instant}, {@code LocalDate}, …) decode
+     * from the ISO strings the structured-output schema advertises for them.
+     */
+    public static ObjectMapper newDefaultMapper() {
+        return new ObjectMapper()
+                .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
+    }
+
     // -----------------------------------------------------------------------
     // Public HTTP methods
     // -----------------------------------------------------------------------
