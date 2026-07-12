@@ -62,7 +62,7 @@ public class MeshAPI {
     private final WebResource web;
 
     private MeshAPI(Builder builder) {
-        ObjectMapper mapper = new ObjectMapper();
+        ObjectMapper mapper = HttpClient.newDefaultMapper();
         java.net.http.HttpClient javaHttp = builder.javaHttpClient != null
                 ? builder.javaHttpClient
                 : java.net.http.HttpClient.newBuilder()
