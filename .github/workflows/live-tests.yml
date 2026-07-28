@@ -70,7 +70,7 @@ jobs:
         working-directory: livetests
         run: |
           if [ "${{ steps.mode.outputs.value }}" = "smoke" ]; then
-            mvn test -Dtest=ModelsLiveTest,ChatLiveTest,InferenceResourcesLiveTest,StreamLiveTest,ErrorsLiveTest
+            mvn test -Dtest=ModelsLiveTest,ChatLiveTest,'InferenceResourcesLiveTest#embeddings_create+responses_create_and_stream',StreamLiveTest,ErrorsLiveTest
           else
             mvn test
           fi
