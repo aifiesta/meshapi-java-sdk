@@ -4,12 +4,13 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import com.meshapi.sdk.types.ApiResponse;
 
 /**
  * Response from GET /v1/models/search.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ModelsPage {
+public class ModelsPage extends ApiResponse {
     @JsonProperty("items") public List<ModelInfo> items;
     @JsonProperty("total") public int total;
     @JsonProperty("limit") public int limit;

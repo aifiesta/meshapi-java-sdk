@@ -7,9 +7,10 @@ import com.fasterxml.jackson.annotation.Nulls;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.meshapi.sdk.types.ApiResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RagFileListResponse {
+public class RagFileListResponse extends ApiResponse {
     @JsonProperty("files")
     @JsonSetter(nulls = Nulls.AS_EMPTY)
     public List<RagFileStatus> files = new ArrayList<>();

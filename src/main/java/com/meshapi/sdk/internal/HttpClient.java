@@ -3,6 +3,8 @@ package com.meshapi.sdk.internal;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.meshapi.sdk.MeshAPIError;
 import com.meshapi.sdk.MeshAPI;
+import com.meshapi.sdk.RequestOptions;
+import com.meshapi.sdk.types.ApiResponse;
 import com.meshapi.sdk.types.chat.ChatCompletionChunk;
 import java.net.URI;
 import java.net.http.HttpRequest;
@@ -22,6 +24,7 @@ public class HttpClient {
     private static final int BACKOFF_MAX_MS = 30_000;
     private static final String SDK_VERSION_HEADER = "X-MeshAPI-SDK";
     private static final String SDK_VERSION_VALUE = "java/" + MeshAPI.VERSION;
+    private static final String REQUEST_ID_HEADER = "X-Request-Id";
 
     private final java.net.http.HttpClient javaClient;
     private final ObjectMapper mapper;
@@ -78,11 +81,15 @@ public class HttpClient {
     }
 
     public <T> T post(String path, Object body, Class<T> responseType) {
-        return jsonRequest("POST", path, body, responseType);
+        return jsonRequest("POST", path, body, responseType, null);
+    }
+
+    public <T> T post(String path, Object body, Class<T> responseType, RequestOptions options) {
+        return jsonRequest("POST", path, body, responseType, options);
     }
 
     public <T> T patch(String path, Object body, Class<T> responseType) {
-        return jsonRequest("PATCH", path, body, responseType);
+        return jsonRequest("PATCH", path, body, responseType, null);
     }
 
     public void delete(String path) {
@@ -96,19 +103,23 @@ public class HttpClient {
     }
 
     public Iterator<ChatCompletionChunk> stream(String path, Object body) {
+        return stream(path, body, null);
+    }
+
+    public Iterator<ChatCompletionChunk> stream(String path, Object body, RequestOptions options) {
         try {
             String json = mapper.writeValueAsString(body);
-            HttpRequest req = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + path))
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .header("Authorization", "Bearer " + token)
                     .header("Content-Type", "application/json")
                     .header("Accept", "text/event-stream")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
-                    .build();
+                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE);
+            applyOptions(builder, options);
 
             HttpResponse<java.io.InputStream> response =
-                    javaClient.send(req, HttpResponse.BodyHandlers.ofInputStream());
+                    javaClient.send(builder.build(), HttpResponse.BodyHandlers.ofInputStream());
 
             if (response.statusCode() >= 400) {
                 String errorBody = new String(response.body().readAllBytes());
@@ -116,7 +127,7 @@ public class HttpClient {
                 throw MeshAPIError.fromResponse(errResp);
             }
 
-            return new SseParser(response.body());
+            return new SseParser(response.body(), requestIdOf(response));
         } catch (MeshAPIError e) {
             throw e;
         } catch (Exception e) {
@@ -125,20 +136,24 @@ public class HttpClient {
     }
 
     public <T> Iterator<T> streamJson(String path, Object body, Class<T> valueType) {
+        return streamJson(path, body, valueType, null);
+    }
+
+    public <T> Iterator<T> streamJson(String path, Object body, Class<T> valueType, RequestOptions options) {
         try {
             String json = mapper.writeValueAsString(body);
-            HttpRequest req = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + path))
                     .POST(HttpRequest.BodyPublishers.ofString(json))
                     .header("Authorization", "Bearer " + token)
                     .header("Content-Type", "application/json")
                     .header("Accept", "text/event-stream")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
-                    .build();
+                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE);
+            applyOptions(builder, options);
 
             // Streaming: no retry
             HttpResponse<java.io.InputStream> response =
-                    javaClient.send(req, HttpResponse.BodyHandlers.ofInputStream());
+                    javaClient.send(builder.build(), HttpResponse.BodyHandlers.ofInputStream());
 
             if (response.statusCode() >= 400) {
                 String errorBody = new String(response.body().readAllBytes());
@@ -146,7 +161,7 @@ public class HttpClient {
                 throw MeshAPIError.fromResponse(errResp);
             }
 
-            return new JsonSseParser<>(response.body(), valueType);
+            return new JsonSseParser<>(response.body(), valueType, requestIdOf(response));
         } catch (MeshAPIError e) {
             throw e;
         } catch (Exception e) {
@@ -208,6 +223,11 @@ public class HttpClient {
     }
 
     public <T> T postMultipart(String path, java.util.Map<String, String> fields, byte[] fileData, String filename, Class<T> responseType) {
+        return postMultipart(path, fields, fileData, filename, responseType, null);
+    }
+
+    public <T> T postMultipart(String path, java.util.Map<String, String> fields, byte[] fileData, String filename,
+                               Class<T> responseType, RequestOptions options) {
         try {
             String boundary = "----MeshAPIBoundary" + System.currentTimeMillis();
             java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
@@ -229,20 +249,22 @@ public class HttpClient {
 
             baos.write(("--" + boundary + "--\r\n").getBytes());
 
-            HttpRequest req = HttpRequest.newBuilder()
+            HttpRequest.Builder builder = HttpRequest.newBuilder()
                     .uri(URI.create(baseUrl + path))
                     .POST(HttpRequest.BodyPublishers.ofByteArray(baos.toByteArray()))
                     .header("Authorization", "Bearer " + token)
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                     .header("Accept", "application/json")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
-                    .build();
+                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE);
+            applyOptions(builder, options);
 
-            HttpResponse<String> response = javaClient.send(req, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = javaClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 400) {
                 throw MeshAPIError.fromResponse(response);
             }
-            return mapper.readValue(response.body(), responseType);
+            T result = mapper.readValue(response.body(), responseType);
+            attachRequestId(result, response);
+            return result;
         } catch (MeshAPIError e) {
             throw e;
         } catch (Exception e) {
@@ -254,7 +276,8 @@ public class HttpClient {
     // Internal
     // -----------------------------------------------------------------------
 
-    private <T> T jsonRequest(String method, String path, Object body, Class<T> responseType) {
+    private <T> T jsonRequest(String method, String path, Object body, Class<T> responseType,
+                              RequestOptions options) {
         try {
             String json = mapper.writeValueAsString(body);
             HttpRequest.Builder builder = HttpRequest.newBuilder()
@@ -263,6 +286,7 @@ public class HttpClient {
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE);
+            applyOptions(builder, options);
 
             if ("PATCH".equals(method)) {
                 builder.method("PATCH", HttpRequest.BodyPublishers.ofString(json));
@@ -293,10 +317,34 @@ public class HttpClient {
                     response.statusCode(), "parse_error", "", null, null);
         }
         try {
-            return mapper.readValue(response.body(), responseType);
+            T result = mapper.readValue(response.body(), responseType);
+            attachRequestId(result, response);
+            return result;
         } catch (Exception e) {
             throw new MeshAPIError("JSON parse error: " + e.getMessage(),
                     response.statusCode(), "parse_error", "", null, null);
+        }
+    }
+
+    /** Adds per-request headers (currently only X-Request-Id) from {@link RequestOptions}. */
+    private static void applyOptions(HttpRequest.Builder builder, RequestOptions options) {
+        if (options != null && options.getRequestId() != null) {
+            builder.header(REQUEST_ID_HEADER, options.getRequestId());
+        }
+    }
+
+    /** Reads the X-Request-Id response header (empty string when absent). */
+    private static String requestIdOf(HttpResponse<?> response) {
+        return response.headers().firstValue("x-request-id").orElse("");
+    }
+
+    /** Populates {@link ApiResponse#getRequestId()} from the response headers. */
+    private static void attachRequestId(Object mapped, HttpResponse<?> response) {
+        if (mapped instanceof ApiResponse apiResponse) {
+            String requestId = requestIdOf(response);
+            if (!requestId.isEmpty()) {
+                apiResponse.setRequestId(requestId);
+            }
         }
     }
 

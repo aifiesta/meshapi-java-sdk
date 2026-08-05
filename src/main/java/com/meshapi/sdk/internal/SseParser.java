@@ -20,14 +20,29 @@ public class SseParser implements Iterator<ChatCompletionChunk>, AutoCloseable {
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final BufferedReader reader;
+    private final String requestId;
     private ChatCompletionChunk nextChunk = null;
     private boolean done = false;
     private MeshAPIError pendingError = null;
 
     public SseParser(InputStream inputStream) {
+        this(inputStream, null);
+    }
+
+    public SseParser(InputStream inputStream, String requestId) {
         this.reader = new BufferedReader(
                 new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+        this.requestId = requestId;
         advance();
+    }
+
+    /**
+     * The {@code X-Request-Id} response header of the underlying SSE response,
+     * or null when the header was absent. Available as soon as the stream is
+     * opened (headers arrive before any chunk).
+     */
+    public String getRequestId() {
+        return requestId;
     }
 
     @Override

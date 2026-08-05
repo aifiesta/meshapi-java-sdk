@@ -2,9 +2,10 @@ package com.meshapi.sdk.types.rag;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.meshapi.sdk.types.ApiResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RagFileStatus {
+public class RagFileStatus extends ApiResponse {
     @JsonProperty("file_id") public String fileId;
     @JsonProperty("upload_status") public String uploadStatus;
     @JsonProperty("file_name") public String fileName;

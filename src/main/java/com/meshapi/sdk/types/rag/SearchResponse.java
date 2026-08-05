@@ -7,9 +7,10 @@ import com.fasterxml.jackson.annotation.Nulls;
 
 import java.util.ArrayList;
 import java.util.List;
+import com.meshapi.sdk.types.ApiResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SearchResponse {
+public class SearchResponse extends ApiResponse {
     @JsonProperty("results")
     @JsonSetter(nulls = Nulls.AS_EMPTY)
     public List<SearchResult> results = new ArrayList<>();

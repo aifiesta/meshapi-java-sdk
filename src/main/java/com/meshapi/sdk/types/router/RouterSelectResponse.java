@@ -2,12 +2,13 @@ package com.meshapi.sdk.types.router;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.meshapi.sdk.types.ApiResponse;
 
 /**
  * Response from POST /v1/router/select.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RouterSelectResponse {
+public class RouterSelectResponse extends ApiResponse {
     /** The selected model ID. */
     @JsonProperty("model") public String model;
 

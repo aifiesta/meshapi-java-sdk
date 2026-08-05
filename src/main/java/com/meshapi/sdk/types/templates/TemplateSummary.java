@@ -5,9 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
+import com.meshapi.sdk.types.ApiResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TemplateSummary {
+public class TemplateSummary extends ApiResponse {
     @JsonProperty("id") public String id;
     @JsonProperty("name") public String name;
     @JsonProperty("owner") public String owner;

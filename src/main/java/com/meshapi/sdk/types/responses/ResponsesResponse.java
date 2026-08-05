@@ -7,9 +7,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import com.meshapi.sdk.types.ApiResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ResponsesResponse {
+public class ResponsesResponse extends ApiResponse {
     @JsonProperty("id") public String id;
     @JsonProperty("object") public String object;
     @JsonProperty("model") public String model;

@@ -1,5 +1,6 @@
 package com.meshapi.sdk.resources;
 
+import com.meshapi.sdk.RequestOptions;
 import com.meshapi.sdk.internal.HttpClient;
 import com.meshapi.sdk.types.audio.AudioTranslationRequest;
 import com.meshapi.sdk.types.audio.SpeechRequest;
@@ -26,8 +27,15 @@ public class AudioResource {
 
     /** POST /v1/audio/transcriptions — multipart file upload. */
     public TranscriptionResponse transcribe(byte[] fileData, String filename, TranscriptionRequest params) {
+        return transcribe(fileData, filename, params, null);
+    }
+
+    /** Multipart transcription with per-request options (e.g. {@code X-Request-Id}). */
+    public TranscriptionResponse transcribe(byte[] fileData, String filename, TranscriptionRequest params,
+                                            RequestOptions options) {
         Map<String, String> fields = transcriptionRequestToFields(params);
-        return http.postMultipart("/v1/audio/transcriptions", fields, fileData, filename, TranscriptionResponse.class);
+        return http.postMultipart("/v1/audio/transcriptions", fields, fileData, filename,
+                TranscriptionResponse.class, options);
     }
 
     /** GET /v1/audio/transcriptions/{transcription_id} */

@@ -5,9 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
+import com.meshapi.sdk.types.ApiResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ImageGenerationResponse {
+public class ImageGenerationResponse extends ApiResponse {
     @JsonProperty("created") public long created;
     @JsonProperty("data") public List<ImageItem> data;
     @JsonProperty("background") public String background;

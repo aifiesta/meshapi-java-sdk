@@ -1,5 +1,6 @@
 package com.meshapi.sdk.resources;
 
+import com.meshapi.sdk.RequestOptions;
 import com.meshapi.sdk.internal.HttpClient;
 import com.meshapi.sdk.types.images.ImageEditRequest;
 import com.meshapi.sdk.types.images.ImageGenerationChunk;
@@ -19,7 +20,12 @@ public class ImagesResource {
      * Sends a non-streaming image generation request and returns the full response.
      */
     public ImageGenerationResponse generate(ImageGenerationRequest params) {
-        return http.post("/v1/images/generations", params, ImageGenerationResponse.class);
+        return generate(params, null);
+    }
+
+    /** Non-streaming image generation with per-request options (e.g. {@code X-Request-Id}). */
+    public ImageGenerationResponse generate(ImageGenerationRequest params, RequestOptions options) {
+        return http.post("/v1/images/generations", params, ImageGenerationResponse.class, options);
     }
 
     /**
@@ -35,6 +41,16 @@ public class ImagesResource {
      * <p>This method does NOT mutate the caller's {@code params} object.
      */
     public Iterator<ImageGenerationChunk> stream(ImageGenerationRequest params) {
+        return stream(params, (RequestOptions) null);
+    }
+
+    /**
+     * Streaming image generation with per-request options
+     * (e.g. {@code X-Request-Id}).
+     *
+     * @see #stream(ImageGenerationRequest)
+     */
+    public Iterator<ImageGenerationChunk> stream(ImageGenerationRequest params, RequestOptions options) {
         // Build a copy of the request with stream=true rather than mutating caller's object.
         ImageGenerationRequest streamReq = ImageGenerationRequest.builder()
                 .prompt(params.prompt)
@@ -59,7 +75,7 @@ public class ImagesResource {
                 .optimizePromptOptions(params.optimizePromptOptions)
                 .stream(true)
                 .build();
-        return http.streamJson("/v1/images/generations", streamReq, ImageGenerationChunk.class);
+        return http.streamJson("/v1/images/generations", streamReq, ImageGenerationChunk.class, options);
     }
 
     /**
@@ -79,6 +95,11 @@ public class ImagesResource {
      * }</pre>
      */
     public ImageGenerationResponse edit(ImageEditRequest params) {
-        return http.post("/v1/images/edits", params, ImageGenerationResponse.class);
+        return edit(params, null);
+    }
+
+    /** Image edit with per-request options (e.g. {@code X-Request-Id}). */
+    public ImageGenerationResponse edit(ImageEditRequest params, RequestOptions options) {
+        return http.post("/v1/images/edits", params, ImageGenerationResponse.class, options);
     }
 }

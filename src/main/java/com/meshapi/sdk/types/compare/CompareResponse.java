@@ -5,9 +5,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 import java.util.Map;
+import com.meshapi.sdk.types.ApiResponse;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class CompareResponse {
+public class CompareResponse extends ApiResponse {
     @JsonProperty("comparison_id") public String comparisonId;
     @JsonProperty("object") public String object;
     @JsonProperty("created") public long created;

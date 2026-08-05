@@ -404,6 +404,33 @@ resp.results.forEach(r -> System.out.println(r.url + "  " + r.title));
 
 Gated server-side by `WEB_SEARCH_ENABLED`. Inspect `resp.provider` ("native" or "tavily") to see which engine served the request.
 
+## Request IDs
+
+Every response carries an `X-Request-Id` header (format `req_<ULID>`) — quote it in support requests and use it to correlate client and server logs.
+
+**Reading it** — top-level response objects extend `ApiResponse`:
+
+```java
+ChatCompletionResponse resp = client.chat().completions().create(params);
+System.out.println(resp.getRequestId());   // "req_01HZ..."
+```
+
+**Setting your own** — pass `RequestOptions` as an optional trailing argument on the inference methods (`chat().completions().create/stream`, `responses().create/stream`, `embeddings().create`, `compare().create/stream`, `images().generate/stream/edit`, `audio().transcribe`):
+
+```java
+import com.meshapi.sdk.RequestOptions;
+
+ChatCompletionResponse resp = client.chat().completions().create(
+    params, RequestOptions.withRequestId("checkout-42"));
+resp.getRequestId();   // "checkout-42" — the backend echoes it back
+```
+
+IDs must be 1–64 characters of `A–Z a–z 0–9 . _ : -`. The backend silently ignores anything else, so the SDK throws `IllegalArgumentException` up front for invalid IDs.
+
+**Errors** carry the ID too, via `MeshAPIError.getRequestId()` (see below).
+
+**Streaming**: the server-assigned ID is available on the stream handle — cast the returned iterator to `com.meshapi.sdk.internal.SseParser` (chat) or `JsonSseParser` (responses/compare/images) and call `getRequestId()`. Simpler: supply your own ID via `RequestOptions` and you already know it.
+
 ## Error handling
 
 ```java

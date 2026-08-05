@@ -16,14 +16,29 @@ public class JsonSseParser<T> implements Iterator<T>, AutoCloseable {
 
     private final BufferedReader reader;
     private final Class<T> valueType;
+    private final String requestId;
     private T nextChunk = null;
     private boolean done = false;
     private MeshAPIError pendingError = null;
 
     public JsonSseParser(InputStream inputStream, Class<T> valueType) {
+        this(inputStream, valueType, null);
+    }
+
+    public JsonSseParser(InputStream inputStream, Class<T> valueType, String requestId) {
         this.reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
         this.valueType = valueType;
+        this.requestId = requestId;
         advance();
+    }
+
+    /**
+     * The {@code X-Request-Id} response header of the underlying SSE response,
+     * or null when the header was absent. Available as soon as the stream is
+     * opened (headers arrive before any chunk).
+     */
+    public String getRequestId() {
+        return requestId;
     }
 
     @Override

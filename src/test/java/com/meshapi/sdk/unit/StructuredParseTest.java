@@ -89,7 +89,7 @@ class StructuredParseTest {
     @SuppressWarnings("unchecked")
     private static CompletionsResource resourceReturning(HttpClient http, ChatCompletionResponse... responses) {
         when(http.getObjectMapper()).thenReturn(MAPPER);
-        var stub = when(http.post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class)));
+        var stub = when(http.post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class), any()));
         for (ChatCompletionResponse r : responses) {
             stub = stub.thenReturn(r);
         }
@@ -110,7 +110,7 @@ class StructuredParseTest {
     private static CompletionsResource capturing(HttpClient http, Sent sent, ChatCompletionResponse... responses) {
         when(http.getObjectMapper()).thenReturn(MAPPER);
         AtomicInteger i = new AtomicInteger();
-        when(http.post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class)))
+        when(http.post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class), any()))
                 .thenAnswer(inv -> {
                     ChatCompletionRequest r = inv.getArgument(1);
                     sent.messages.add(new ArrayList<>(r.getMessages()));
@@ -193,7 +193,7 @@ class StructuredParseTest {
         HttpClient http = mock(HttpClient.class);
         CompletionsResource comp = resourceReturning(http, resp("not json"));
         assertThrows(StructuredOutputError.class, () -> comp.parse(req(), Country.class));
-        verify(http, times(1)).post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class));
+        verify(http, times(1)).post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class), any());
     }
 
     @Test
@@ -208,7 +208,7 @@ class StructuredParseTest {
         Country got = comp.parse(request, Country.class, StructuredParseOptions.create().maxRetries(1));
 
         assertEquals("Paris", got.capital);
-        verify(http, times(2)).post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class));
+        verify(http, times(2)).post(eq("/v1/chat/completions"), any(), eq(ChatCompletionResponse.class), any());
         // the retry call carried original user + assistant(bad) + user(correction)
         assertEquals(3, sent.messages.get(1).size());
         // the caller's request is restored to just its original message afterward

@@ -4,13 +4,14 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
+import com.meshapi.sdk.types.ApiResponse;
 
 /**
  * Represents a model entry from the MeshAPI models endpoints.
  * Maps to the {@code ModelOut} schema in the OpenAPI spec.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class ModelInfo {
+public class ModelInfo extends ApiResponse {
     // -----------------------------------------------------------------------
     // Required fields
     // -----------------------------------------------------------------------

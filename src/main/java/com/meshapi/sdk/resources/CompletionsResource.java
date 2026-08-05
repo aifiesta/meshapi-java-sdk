@@ -2,6 +2,7 @@ package com.meshapi.sdk.resources;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.meshapi.sdk.RequestOptions;
 import com.meshapi.sdk.StructuredOutputError;
 import com.meshapi.sdk.internal.HttpClient;
 import com.meshapi.sdk.internal.StructuredOutputs;
@@ -28,8 +29,16 @@ public class CompletionsResource {
      * Sends a non-streaming chat completion request.
      */
     public ChatCompletionResponse create(ChatCompletionRequest params) {
+        return create(params, null);
+    }
+
+    /**
+     * Sends a non-streaming chat completion request with per-request options
+     * (e.g. a client-supplied request ID sent as {@code X-Request-Id}).
+     */
+    public ChatCompletionResponse create(ChatCompletionRequest params, RequestOptions options) {
         params.setStream(false);
-        return http.post("/v1/chat/completions", params, ChatCompletionResponse.class);
+        return http.post("/v1/chat/completions", params, ChatCompletionResponse.class, options);
     }
 
     /**
@@ -43,8 +52,18 @@ public class CompletionsResource {
      * {@link #stream} call if reconnection is needed.
      */
     public Iterator<ChatCompletionChunk> stream(ChatCompletionRequest params) {
+        return stream(params, null);
+    }
+
+    /**
+     * Opens a streaming chat completion with per-request options
+     * (e.g. a client-supplied request ID sent as {@code X-Request-Id}).
+     *
+     * @see #stream(ChatCompletionRequest)
+     */
+    public Iterator<ChatCompletionChunk> stream(ChatCompletionRequest params, RequestOptions options) {
         params.setStream(true);
-        return http.stream("/v1/chat/completions", params);
+        return http.stream("/v1/chat/completions", params, options);
     }
 
     /**
