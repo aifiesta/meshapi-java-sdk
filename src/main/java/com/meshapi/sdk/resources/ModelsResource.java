@@ -44,16 +44,24 @@ public class ModelsResource {
         return MAPPER.convertValue(arr, MODEL_LIST);
     }
 
-    /** Returns only free-tier models. */
+    /**
+     * Returns only free-tier models.
+     *
+     * <p>Convenience wrapper over {@link #list(Boolean)} with {@code true}. The backend's
+     * {@code /v1/models/free} shortcut was removed in favour of the {@code ?free=} query
+     * parameter; this method stays so callers don't have to change.
+     */
     public List<ModelInfo> free() {
-        Object[] arr = http.get("/v1/models/free", Object[].class);
-        return MAPPER.convertValue(arr, MODEL_LIST);
+        return list(Boolean.TRUE);
     }
 
-    /** Returns only paid-tier models. */
+    /**
+     * Returns only paid-tier models.
+     *
+     * <p>Convenience wrapper over {@link #list(Boolean)} with {@code false} — see {@link #free()}.
+     */
     public List<ModelInfo> paid() {
-        Object[] arr = http.get("/v1/models/paid", Object[].class);
-        return MAPPER.convertValue(arr, MODEL_LIST);
+        return list(Boolean.FALSE);
     }
 
     /**
