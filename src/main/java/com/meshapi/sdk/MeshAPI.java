@@ -45,6 +45,22 @@ public class MeshAPI {
     /** Current SDK version. */
     public static final String VERSION = "0.1.0";
 
+    /**
+     * The dated MeshAPI contract version this SDK release was built against, sent as
+     * {@code X-Mesh-Version} on every request.
+     *
+     * <p>Distinct from {@link #VERSION}: that identifies this SDK build, this identifies
+     * the API contract it parses. They move independently — the contract changes only
+     * when the SDK is updated for a newer response shape, which is rarer than a
+     * release. Bump it together with whatever type changes that entails, and note it in
+     * CHANGELOG.md so a caller can see which contract a release targets.
+     *
+     * <p>Not sent on the realtime WebSocket handshake: the gateway's versioning applies
+     * to HTTP requests only, so a pin there would be a header nobody reads. Realtime
+     * negotiates its version separately.
+     */
+    public static final String API_VERSION = "2026-08";
+
     private final ChatResource chat;
     private final ResponsesResource responses;
     private final EmbeddingsResource embeddings;
@@ -75,7 +91,8 @@ public class MeshAPI {
                 builder.baseUrl,
                 builder.token,
                 builder.maxRetries,
-                Duration.ofMillis(builder.timeoutMs)
+                Duration.ofMillis(builder.timeoutMs),
+                builder.apiVersion
         );
         this.chat = new ChatResource(http);
         this.responses = new ResponsesResource(http);
@@ -122,6 +139,10 @@ public class MeshAPI {
         private long timeoutMs = 60_000;
         private int maxRetries = 3;
         private java.net.http.HttpClient javaHttpClient;
+        // Defaulted to the constant rather than left null, which is what makes an
+        // explicit apiVersion(null) meaningful: "never called" and "opted out" have to
+        // be distinguishable, and this avoids a separate sentinel to tell them apart.
+        private String apiVersion = API_VERSION;
 
         /** The MeshAPI gateway base URL (required). */
         public Builder baseUrl(String baseUrl) { this.baseUrl = baseUrl; return this; }
@@ -134,6 +155,20 @@ public class MeshAPI {
 
         /** Number of retry attempts on retryable errors (default 3, use 0 to disable). */
         public Builder maxRetries(int retries) { this.maxRetries = retries; return this; }
+
+        /**
+         * Pins the dated MeshAPI contract version sent as {@code X-Mesh-Version}.
+         *
+         * <p>Defaults to {@link MeshAPI#API_VERSION}, the version this SDK release was
+         * built against. Pass a different label if you have migrated ahead of this
+         * release, or {@code null} to send no header at all and be served the gateway's
+         * baseline, whatever it may become.
+         *
+         * <p>The gateway rejects a version it does not serve with {@code 400
+         * invalid_api_version} rather than falling back, so a typo cannot leave you
+         * believing you are pinned when you are not.
+         */
+        public Builder apiVersion(String apiVersion) { this.apiVersion = apiVersion; return this; }
 
         /** Inject a custom {@link java.net.http.HttpClient} (useful for testing). */
         public Builder httpClient(java.net.http.HttpClient client) {

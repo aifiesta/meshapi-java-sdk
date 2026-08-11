@@ -61,14 +61,31 @@ public class ModelInfo {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ModelPricing {
-        // Required (but may be null values)
+        // Retired on the wire. The gateway stopped returning these in v1.0.135 and has
+        // no reference to them left, so they are always null. Kept declared because they
+        // are part of this SDK's published surface — removing the fields would fail to
+        // compile for callers that read them, where they now simply read null. Use the
+        // per-1M or per-unit fields below instead. (Their previous "Required" comment
+        // was wrong.)
         @JsonProperty("prompt_usd_per_1k") public String promptUsdPer1k;
         @JsonProperty("completion_usd_per_1k") public String completionUsdPer1k;
 
         // Optional pricing fields — all are Strings per the spec
+        /** The unit the per-unit rates are quoted in: per_1m_tokens, per_second, … */
         @JsonProperty("pricing_unit") public String pricingUnit;
         @JsonProperty("prompt_usd_per_1m") public String promptUsdPer1m;
         @JsonProperty("completion_usd_per_1m") public String completionUsdPer1m;
+        /**
+         * The raw rate in this row's own {@link #pricingUnit}.
+         *
+         * <p>For token-priced rows this equals {@link #promptUsdPer1m}. For everything
+         * else — per-second video, per-image, per-1k-chars, per-hour — the per-1M fields
+         * are null <b>by design</b> and this is the only place the price exists. Read it
+         * together with {@code pricingUnit}, which is what makes the bare number a price.
+         */
+        @JsonProperty("input_usd_per_unit") public String inputUsdPerUnit;
+        /** Output side of {@link #inputUsdPerUnit}. */
+        @JsonProperty("output_usd_per_unit") public String outputUsdPerUnit;
         @JsonProperty("image_output_usd_per_image") public String imageOutputUsdPerImage;
         @JsonProperty("request_usd") public String requestUsd;
         @JsonProperty("long_context_input_usd_per_1m") public String longContextInputUsdPer1m;

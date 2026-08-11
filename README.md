@@ -36,6 +36,37 @@ ChatCompletionResponse resp = client.chat().completions().create(
 System.out.println(resp.choices.get(0).message.content);
 ```
 
+## API version
+
+MeshAPI versions its contract by date. This release targets **`2026-08`** and sends it
+as `X-Mesh-Version` on every request:
+
+```java
+MeshAPI.API_VERSION; // "2026-08" — the contract this release was built to parse
+
+// Pin a newer version, if you have migrated ahead of this SDK release:
+MeshAPI.builder().baseUrl(baseUrl).token(token).apiVersion("2026-09").build();
+
+// Send no header at all and take the gateway's baseline, whatever it becomes:
+MeshAPI.builder().baseUrl(baseUrl).token(token).apiVersion(null).build();
+```
+
+Never calling `apiVersion(...)` uses this SDK's version; passing `null` is an explicit
+opt-out. Note `MeshAPI.API_VERSION` is the API contract while `MeshAPI.VERSION` is the
+SDK build — they move independently.
+
+**Why pin.** An unpinned client is served whatever the gateway defaults to, so it never
+states which response shape it can parse. That is safe today only because the baseline
+is the *oldest* supported version and so never moves on its own. Pinning makes it a
+contract instead of a coincidence.
+
+The gateway rejects a version it does not serve with `400 invalid_api_version` rather
+than falling back, so a typo cannot leave you believing you are pinned when you are
+not. `GET /v1/api-versions` lists what a deployment serves.
+
+Not sent on the realtime WebSocket handshake — the gateway's versioning applies to HTTP
+requests only, and realtime negotiates its version separately.
+
 ## Chat completions
 
 ```java
