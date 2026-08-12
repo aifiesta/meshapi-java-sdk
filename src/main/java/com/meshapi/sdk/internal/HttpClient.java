@@ -22,15 +22,24 @@ public class HttpClient {
     private static final int BACKOFF_MAX_MS = 30_000;
     private static final String SDK_VERSION_HEADER = "X-MeshAPI-SDK";
     private static final String SDK_VERSION_VALUE = "java/" + MeshAPI.VERSION;
+    private static final String API_VERSION_HEADER = "X-Mesh-Version";
 
     private final java.net.http.HttpClient javaClient;
     private final ObjectMapper mapper;
     private final String baseUrl;
     private final String token;
     private final int maxRetries;
+    /** Null or blank means send no version header — see {@link MeshAPI.Builder#apiVersion}. */
+    private final String apiVersion;
 
     public HttpClient(java.net.http.HttpClient javaClient, ObjectMapper mapper,
                       String baseUrl, String token, int maxRetries, Duration timeout) {
+        this(javaClient, mapper, baseUrl, token, maxRetries, timeout, MeshAPI.API_VERSION);
+    }
+
+    public HttpClient(java.net.http.HttpClient javaClient, ObjectMapper mapper,
+                      String baseUrl, String token, int maxRetries, Duration timeout,
+                      String apiVersion) {
         this.javaClient = javaClient != null ? javaClient :
                 java.net.http.HttpClient.newBuilder()
                         .connectTimeout(timeout)
@@ -40,6 +49,28 @@ public class HttpClient {
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
         this.token = token;
         this.maxRetries = maxRetries;
+        this.apiVersion = apiVersion;
+    }
+
+    /**
+     * Starts a request to this gateway with the headers every call must carry.
+     *
+     * <p>Introduced because those headers were previously repeated at eight separate
+     * {@code HttpRequest.newBuilder()} sites, so adding one meant editing all eight and
+     * a miss was silent. Callers still add their own {@code Content-Type} / {@code
+     * Accept}, which genuinely differ per call shape.
+     */
+    private HttpRequest.Builder request(String url) {
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .header("Authorization", "Bearer " + token)
+                .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE);
+        // Omitted entirely, not sent blank, when the caller opts out: the gateway reads
+        // an empty value as a typo'd pin and 400s it rather than as "no pin".
+        if (apiVersion != null && !apiVersion.isBlank()) {
+            builder.header(API_VERSION_HEADER, apiVersion);
+        }
+        return builder;
     }
 
     /** The configured Jackson mapper, shared for structured-output parsing. */
@@ -67,12 +98,9 @@ public class HttpClient {
 
     public <T> T get(String path, String queryString, Class<T> responseType) {
         String url = baseUrl + path + (queryString != null && !queryString.isBlank() ? "?" + queryString : "");
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(url))
+        HttpRequest req = request(url)
                 .GET()
-                .header("Authorization", "Bearer " + token)
                 .header("Accept", "application/json")
-                .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                 .build();
         return execute(req, responseType);
     }
@@ -86,11 +114,8 @@ public class HttpClient {
     }
 
     public void delete(String path) {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + path))
+        HttpRequest req = request(baseUrl + path)
                 .method("DELETE", HttpRequest.BodyPublishers.noBody())
-                .header("Authorization", "Bearer " + token)
-                .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                 .build();
         executeRaw(req); // returns response, we don't need the body
     }
@@ -98,13 +123,10 @@ public class HttpClient {
     public Iterator<ChatCompletionChunk> stream(String path, Object body) {
         try {
             String json = mapper.writeValueAsString(body);
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
+            HttpRequest req = request(baseUrl + path)
                     .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .header("Authorization", "Bearer " + token)
                     .header("Content-Type", "application/json")
                     .header("Accept", "text/event-stream")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                     .build();
 
             HttpResponse<java.io.InputStream> response =
@@ -127,13 +149,10 @@ public class HttpClient {
     public <T> Iterator<T> streamJson(String path, Object body, Class<T> valueType) {
         try {
             String json = mapper.writeValueAsString(body);
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
+            HttpRequest req = request(baseUrl + path)
                     .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .header("Authorization", "Bearer " + token)
                     .header("Content-Type", "application/json")
                     .header("Accept", "text/event-stream")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                     .build();
 
             // Streaming: no retry
@@ -164,11 +183,8 @@ public class HttpClient {
     }
 
     public byte[] getBytes(String path) {
-        HttpRequest req = HttpRequest.newBuilder()
-                .uri(URI.create(baseUrl + path))
+        HttpRequest req = request(baseUrl + path)
                 .GET()
-                .header("Authorization", "Bearer " + token)
-                .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                 .build();
         try {
             HttpResponse<byte[]> response = javaClient.send(req, HttpResponse.BodyHandlers.ofByteArray());
@@ -187,12 +203,9 @@ public class HttpClient {
     public byte[] postBytes(String path, Object body) {
         try {
             String json = mapper.writeValueAsString(body);
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
+            HttpRequest req = request(baseUrl + path)
                     .POST(HttpRequest.BodyPublishers.ofString(json))
-                    .header("Authorization", "Bearer " + token)
                     .header("Content-Type", "application/json")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                     .build();
             HttpResponse<byte[]> response = javaClient.send(req, HttpResponse.BodyHandlers.ofByteArray());
             if (response.statusCode() >= 400) {
@@ -229,13 +242,10 @@ public class HttpClient {
 
             baos.write(("--" + boundary + "--\r\n").getBytes());
 
-            HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
+            HttpRequest req = request(baseUrl + path)
                     .POST(HttpRequest.BodyPublishers.ofByteArray(baos.toByteArray()))
-                    .header("Authorization", "Bearer " + token)
                     .header("Content-Type", "multipart/form-data; boundary=" + boundary)
                     .header("Accept", "application/json")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE)
                     .build();
 
             HttpResponse<String> response = javaClient.send(req, HttpResponse.BodyHandlers.ofString());
@@ -257,12 +267,9 @@ public class HttpClient {
     private <T> T jsonRequest(String method, String path, Object body, Class<T> responseType) {
         try {
             String json = mapper.writeValueAsString(body);
-            HttpRequest.Builder builder = HttpRequest.newBuilder()
-                    .uri(URI.create(baseUrl + path))
-                    .header("Authorization", "Bearer " + token)
+            HttpRequest.Builder builder = request(baseUrl + path)
                     .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .header(SDK_VERSION_HEADER, SDK_VERSION_VALUE);
+                    .header("Accept", "application/json");
 
             if ("PATCH".equals(method)) {
                 builder.method("PATCH", HttpRequest.BodyPublishers.ofString(json));

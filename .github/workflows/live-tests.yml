@@ -40,11 +40,20 @@ jobs:
           java-version: "17"
           cache: maven
 
+      # The install below passes -DskipTests, so NO workflow ran the SDK's own unit and
+      # contract tests and a broken one merged green (found in MESH-508 while adding a
+      # contract test that no CI would have executed). They need no network and no
+      # secrets, so they gate everything after them.
+      - name: Unit and contract tests
+        run: mvn test -q
+
       - name: Install SDK into local Maven repo
         run: mvn install -DskipTests -q
 
       # Gating where safe (MESH-368): PRs and pushes run the cheap SMOKE subset
-      # (Models/Chat/InferenceResources/Stream/Errors LiveTest) so they gate
+      # (Models/Chat/InferenceResources/Stream/Errors LiveTest, plus the API-version
+      # pin — a stale pin 400s every single request, so it is the cheapest test with
+      # the widest blast radius) so they gate
       # reliably green — the full suite includes slow/flaky calls (image
       # generation, realtime WebSocket) that intermittently exceed provider
       # latency and shouldn't block unrelated PRs. The FULL suite still runs,
@@ -64,7 +73,7 @@ jobs:
         working-directory: livetests
         run: |
           if [ "${{ steps.mode.outputs.value }}" = "smoke" ]; then
-            mvn test -Dtest=ModelsLiveTest,ChatLiveTest,'InferenceResourcesLiveTest#embeddings_create+responses_create_and_stream',StreamLiveTest,ErrorsLiveTest
+            mvn test -Dtest=ModelsLiveTest,ChatLiveTest,'InferenceResourcesLiveTest#embeddings_create+responses_create_and_stream',StreamLiveTest,ErrorsLiveTest,ApiVersionLiveTest
           else
             mvn test
           fi
