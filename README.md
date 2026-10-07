@@ -183,8 +183,9 @@ import com.meshapi.sdk.types.audio.*;
 byte[] audioBytes = client.audio().synthesize(
     SpeechRequest.builder()
         .input("Hello from MeshAPI.")
-        .model("sarvam/bulbul:v2")
-        .voice("meera")
+        .model("sarvam/bulbul:v3")
+        // Sarvam models take their voice in speaker(); voice() is for other providers (e.g. ElevenLabs).
+        .speaker("ritu")
         .build()
 );
 Files.write(Paths.get("output.wav"), audioBytes);
