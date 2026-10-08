@@ -8,7 +8,9 @@
       "url": "https://example.com/jwst",
       "content": "Astronomers using the James Webb Space Telescope identified JADES-GS-z14-0…",
       "score": 0.93,
-      "published_date": "2024-06-11"
+      "published_date": "2024-06-11",
+      "page_content": null,
+      "page_content_truncated": false
     }
   ],
   "request_id": "req_01J123456789"
