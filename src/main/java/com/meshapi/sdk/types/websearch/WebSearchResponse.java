@@ -10,7 +10,7 @@ import java.util.List;
 public class WebSearchResponse {
     /** The search query that was used. */
     @JsonProperty("query") public String query;
-    /** The engine that served the request — "native" or "tavily". */
+    /** The engine that served the request — "native", "tavily" or "tinyfish". */
     @JsonProperty("provider") public String provider;
     /** Synthesized answer (only present when include_answer=true). */
     @JsonProperty("answer") public String answer;
