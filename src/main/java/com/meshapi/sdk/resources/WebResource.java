@@ -8,8 +8,13 @@ import com.meshapi.sdk.types.websearch.WebSearchResponse;
  * Web search resource — wraps POST /v1/web/search.
  *
  * <p>Gated server-side by {@code WEB_SEARCH_ENABLED}; disabled deployments
- * return 403/404. Native-first with Tavily fallback — inspect
- * {@link WebSearchResponse#provider} to see which engine served the request.
+ * return 403/404. The native engine is tried first and failover to another
+ * engine is opaque — inspect {@link WebSearchResponse#provider} to see which one
+ * served. Pinning the request's {@code provider} turns failover off.
+ *
+ * <p>Set {@code includePageContent} to get each result's extracted page text
+ * alongside the snippet. Only the {@code tinyfish} engine returns it, so pin that
+ * engine when you need it.
  *
  * <pre>{@code
  * WebSearchResponse resp = client.web().search(

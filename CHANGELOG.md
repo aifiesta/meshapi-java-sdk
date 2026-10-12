@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- `WebSearchRequest.Builder.includePageContent(boolean)` returns each result's
+  extracted page text in the new `WebSearchResultItem.pageContent`, so one call
+  replaces search-then-fetch. `pageContentTruncated` says when that text was cut at
+  the server's per-result ceiling, so a truncated page is never served as a whole
+  one. Only the `tinyfish` engine returns page text and the native engine is tried
+  first, so pin `provider("tinyfish")` when you need it.
+- Leaving `includePageContent` unset omits it from the body, so existing calls are
+  byte-identical on the wire.
+
 ### API version
 
 - **This release targets MeshAPI version `2026-08`.** Every request now sends

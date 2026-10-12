@@ -434,7 +434,38 @@ System.out.println(resp.provider + ": " + resp.answer);
 resp.results.forEach(r -> System.out.println(r.url + "  " + r.title));
 ```
 
-Gated server-side by `WEB_SEARCH_ENABLED`. Inspect `resp.provider` ("native" or "tavily") to see which engine served the request.
+Gated server-side by `WEB_SEARCH_ENABLED`. Inspect `resp.provider` ("native", "tavily" or "tinyfish") to see which engine served the request. The native engine is tried first and failover is automatic; pinning `provider` turns failover off.
+
+### Page content
+
+`includePageContent` returns each result's extracted page text, so one call
+replaces search-then-fetch:
+
+```java
+WebSearchResponse resp = client.web().search(
+    WebSearchRequest.builder()
+        .query("latest Mars rover discoveries")
+        .provider("tinyfish")        // the only engine that returns page text
+        .includePageContent(true)
+        .maxResults(2)
+        .build()
+);
+resp.results.forEach(r -> {
+    if (r.pageContent != null) {
+        System.out.println(r.url + "  " + r.pageContent.length() + "  " + r.pageContentTruncated);
+    }
+});
+```
+
+Three things worth knowing before you turn it on:
+
+- **Pin `provider("tinyfish")`.** No other engine returns page text, and native is
+  tried first, so an unpinned request usually comes back with none.
+- **It costs nothing extra but it is slow and large.** The flat per-search fee is
+  unchanged; expect seconds rather than under one, and tens of kilobytes per result.
+- **`pageContent` is `null` per result, not per request.** A page that cannot be read
+  yields no text for that one result instead of failing the search, and
+  `pageContentTruncated` tells you when text was cut at the server's ceiling.
 
 ## Error handling
 

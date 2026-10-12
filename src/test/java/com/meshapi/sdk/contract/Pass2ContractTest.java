@@ -50,6 +50,67 @@ class Pass2ContractTest {
         assertEquals(0.93, item.score, 0.001);
         assertEquals("2024-06-11", item.publishedDate);
         assertEquals("req_01J123456789", resp.requestId);
+        // Both page-content keys arrive on every response. Unasked-for, they read
+        // null and false — not absent, which is what the published contract pins.
+        assertNull(item.pageContent, "page_content should be null when not requested");
+        assertFalse(item.pageContentTruncated);
+    }
+
+    // -----------------------------------------------------------------------
+    // Page content — MESH-1220
+    // -----------------------------------------------------------------------
+
+    @Test
+    void webSearch_pageContentAndTruncationFlagParsed() throws Exception {
+        String raw = """
+            {
+              "query": "mars rovers",
+              "provider": "tinyfish",
+              "request_id": "req_01J",
+              "results": [
+                {
+                  "title": "Perseverance",
+                  "url": "https://example.com/p",
+                  "content": "a short snippet",
+                  "score": 0.9,
+                  "page_content": "the full extracted page text",
+                  "page_content_truncated": true
+                }
+              ]
+            }
+            """;
+        WebSearchResponse resp = MAPPER.readValue(raw, WebSearchResponse.class);
+        WebSearchResultItem item = resp.results.get(0);
+        assertEquals("the full extracted page text", item.pageContent);
+        assertTrue(item.pageContentTruncated);
+        // The snippet is a separate field; page text never replaces it.
+        assertEquals("a short snippet", item.content);
+    }
+
+    @Test
+    void webSearch_responseWithoutTheNewKeysStillParses() throws Exception {
+        // An older gateway omits them entirely; that must not be a parse error.
+        String raw = """
+            {"query":"q","provider":"native","request_id":"req_01J",
+             "results":[{"title":"t","url":"https://example.com","content":"snippet"}]}
+            """;
+        WebSearchResponse resp = MAPPER.readValue(raw, WebSearchResponse.class);
+        WebSearchResultItem item = resp.results.get(0);
+        assertNull(item.pageContent);
+        assertFalse(item.pageContentTruncated, "an absent flag reads false, which is the correct answer");
+    }
+
+    @Test
+    void webSearchRequest_pageContentFlagAndTinyfishSerialise() throws Exception {
+        WebSearchRequest req = WebSearchRequest.builder()
+                .query("mars rovers")
+                .provider("tinyfish")
+                .includePageContent(true)
+                .build();
+
+        var node = MAPPER.readTree(MAPPER.writeValueAsString(req));
+        assertEquals("tinyfish", node.get("provider").asText());
+        assertTrue(node.get("include_page_content").asBoolean());
     }
 
     // -----------------------------------------------------------------------
@@ -95,6 +156,11 @@ class Pass2ContractTest {
         assertFalse(node.has("provider"), "provider should be omitted when null");
         assertFalse(node.has("max_results"), "max_results should be omitted when null");
         assertFalse(node.has("include_answer"), "include_answer should be omitted when null");
+        // Additive means additive: a caller who never set the flag sends exactly
+        // the body it sent before this field existed.
+        assertFalse(
+                node.has("include_page_content"),
+                "include_page_content should be omitted when null");
     }
 
     // -----------------------------------------------------------------------
