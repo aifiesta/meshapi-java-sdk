@@ -32,4 +32,6 @@ jobs:
         run: python -m meshapi_contract.gate --spec contract/openapi.public.json --actual actual.json --spec-version "$(cat .meshapi-spec-version)" --baseline contract-baseline.json
 
       - name: Acceptance tests
+        env:
+          REQUIRE_CONTRACT_GATE: "1"
         run: mvn -q -B -Dtest=ContractCheckTest test
