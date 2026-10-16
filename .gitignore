@@ -29,3 +29,6 @@ nbproject/private/
 
 # VS Code
 .vscode/
+
+# Contract drift gate output
+actual.json

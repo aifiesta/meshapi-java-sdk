@@ -186,6 +186,33 @@
       </build>
     </profile>
 
+    <!-- Prints the typed surface for the contract drift gate:
+         mvn -q -Psurface test-compile exec:java@dump-surface > actual.json -->
+    <profile>
+      <id>surface</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <version>3.3.0</version>
+            <executions>
+              <execution>
+                <id>dump-surface</id>
+                <configuration>
+                  <mainClass>ai.meshapi.contract.DumpSurface</mainClass>
+                  <classpathScope>test</classpathScope>
+                  <arguments>
+                    <argument>${project.basedir}</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <!-- Release profile: GPG signing (activate with -Prelease) -->
     <profile>
       <id>release</id>
