@@ -12,7 +12,9 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -150,23 +152,23 @@ class ApiVersionLiveTest extends LiveTestBase {
     }
 
     @Test
-    @DisplayName("an unpinned request is served the baseline")
-    void unpinnedRequestGetsTheBaseline() throws Exception {
-        // No header means the gateway's baseline, and it says which one it used. This is
-        // what apiVersion(null) opts into.
+    @DisplayName("an unpinned request is served a supported default")
+    void unpinnedRequestGetsASupportedDefault() throws Exception {
+        // No header → the account's default version: the org's default_api_version copied
+        // onto the key at mint (LATEST by provisioning default), else the gateway BASELINE.
+        // Account-dependent, so assert the echo is a served version, not the global baseline.
         JsonNode versions = servedVersions();
         Assumptions.assumeTrue(versions != null, "endpoint not deployed");
 
-        String baseline = null;
+        Set<String> served = new HashSet<>();
         for (JsonNode entry : versions) {
-            if (entry.get("baseline").asBoolean()) {
-                baseline = entry.get("label").asText();
-            }
+            served.add(entry.get("label").asText());
         }
-        assertNotNull(baseline, "the gateway must mark exactly one version as the baseline");
+        assertFalse(served.isEmpty(), "the gateway must serve at least one version");
 
         HttpResponse<String> response = get("/v1/models", null);
         assertEquals(200, response.statusCode(), "GET /v1/models");
-        assertEquals(baseline, echoed(response));
+        assertTrue(served.contains(echoed(response)),
+                "unpinned echo " + echoed(response) + " is not a served version " + served);
     }
 }
