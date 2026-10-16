@@ -55,8 +55,11 @@ class ContractCheckTest {
     private static void assumeGateInstalled() throws Exception {
         Process p = new ProcessBuilder("python3", "-c", "import meshapi_contract").redirectErrorStream(true).start();
         p.getInputStream().readAllBytes();
-        Assumptions.assumeTrue(p.waitFor(30, TimeUnit.SECONDS) && p.exitValue() == 0,
-                "meshapi_contract is not installed");
+        boolean installed = p.waitFor(30, TimeUnit.SECONDS) && p.exitValue() == 0;
+        if (System.getenv("CI") != null) {
+            assertTrue(installed, "meshapi_contract must be installed in CI");
+        }
+        Assumptions.assumeTrue(installed, "meshapi_contract is not installed");
     }
 
     @Test

@@ -1,6 +1,7 @@
 package ai.meshapi.contract;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -105,7 +106,8 @@ public final class DumpSurface {
         Set<String> names = new TreeSet<>();
         for (Class<?> c = cls; c != null && c != Object.class; c = c.getSuperclass()) {
             for (Field f : c.getDeclaredFields()) {
-                if (Modifier.isStatic(f.getModifiers()) || f.isSynthetic()) {
+                if (Modifier.isStatic(f.getModifiers()) || Modifier.isTransient(f.getModifiers())
+                        || f.isSynthetic() || f.isAnnotationPresent(JsonIgnore.class)) {
                     continue;
                 }
                 addName(names, f.getName(), f.getAnnotation(JsonProperty.class), f.getAnnotation(JsonAlias.class));

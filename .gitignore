@@ -32,3 +32,4 @@ nbproject/private/
 
 # Contract drift gate output
 actual.json
+.superpowers/
