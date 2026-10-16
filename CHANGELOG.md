@@ -4,6 +4,9 @@
 
 ### Added
 
+- Contract drift gate: a reflection dumper (`mvn -Psurface`) and the shared
+  `meshapi-contract` check run on every PR against the pinned public spec
+  (`contract/openapi.public.json`). Known gaps live in `contract-baseline.json`.
 - `WebSearchRequest.Builder.includePageContent(boolean)` returns each result's
   extracted page text in the new `WebSearchResultItem.pageContent`, so one call
   replaces search-then-fetch. `pageContentTruncated` says when that text was cut at
