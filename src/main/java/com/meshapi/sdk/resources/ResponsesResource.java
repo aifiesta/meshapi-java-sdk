@@ -1,6 +1,6 @@
 package com.meshapi.sdk.resources;
 
-import com.meshapi.sdk. internal.HttpClient;
+import com.meshapi.sdk.\u0069nternal.HttpClient;
 import com.meshapi.sdk.types.responses.ResponsesInputTokensResponse;
 import com.meshapi.sdk.types.responses.ResponsesRequest;
 import com.meshapi.sdk.types.responses.ResponsesResponse;
@@ -21,7 +21,7 @@ public class ResponsesResource {
     /**
      * Creates a response and waits for the full result.
      *
-     * @param params the request body
+     * @param params the Responses request
      * @return the completed response
      */
     public ResponsesResponse create(ResponsesRequest params) {
@@ -30,10 +30,10 @@ public class ResponsesResource {
     }
 
     /**
-     * Creates a response and streams its events as they arrive.
+     * Creates a response and streams it as server-sent events.
      *
-     * @param params the request body
-     * @return an iterator over the streamed events
+     * @param params the Responses request
+     * @return an iterator over stream events
      */
     public Iterator<ResponsesStreamEvent> stream(ResponsesRequest params) {
         params.stream = true;
@@ -41,13 +41,18 @@ public class ResponsesResource {
     }
 
     /**
-     * Counts the input tokens a Responses request would consume, without running inference.
+     * Counts the input tokens of a Responses request before sending it.
      *
-     * <p>Calls {@code POST /v1/responses/input_tokens}. The request body has the same shape as
-     * {@link #create(ResponsesRequest)}. Counting is not billed and does not create a usage record.
-     * Depending on the routed provider, the count is either exact or a local estimate.</p>
+     * <p>Calls {@code POST /v1/responses/input_tokens}. The request body has the same
+     * shape as {@link #create(ResponsesRequest)}. No inference runs, nothing is billed,
+     * and no usage row is recorded.</p>
      *
-     * @param params the request body to count
+     * <pre>{@code
+     * ResponsesInputTokensResponse count = client.responses().inputTokens(request);
+     * int tokens = count.inputTokens;
+     * }</pre>
+     *
+     * @param params the Responses request to count
      * @return the input token count
      */
     public ResponsesInputTokensResponse inputTokens(ResponsesRequest params) {

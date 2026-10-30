@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ResponsesInputTokensResponse {
-    /** Object type, {@code "response.input_tokens"}. */
+    /** Object type, for example {@code response.input_tokens}. */
     @JsonProperty("object")
     public String object;
 
