@@ -2,59 +2,126 @@ package com.meshapi.sdk.types.audio;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 
+/**
+ * Request body for {@code POST /v1/audio/speech}.
+ *
+ * <p>Build instances with {@link #builder()}. Fields left unset are omitted from the request.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SpeechRequest {
-    @JsonProperty("input") public String input;
-    @JsonProperty("model") public String model;
-    @JsonProperty("voice") public String voice;
-    @JsonProperty("stream") public Boolean stream;
-    @JsonProperty("response_format") public String responseFormat;
-    @JsonProperty("language_code") public String languageCode;
-    @JsonProperty("voice_settings") public VoiceSettings voiceSettings;
-    @JsonProperty("pronunciation_dictionary_locators") public List<PronunciationDictionaryLocator> pronunciationDictionaryLocators;
-    @JsonProperty("seed") public Integer seed;
-    @JsonProperty("previous_text") public String previousText;
-    @JsonProperty("next_text") public String nextText;
-    @JsonProperty("previous_request_ids") public List<String> previousRequestIds;
-    @JsonProperty("next_request_ids") public List<String> nextRequestIds;
-    @JsonProperty("apply_text_normalization") public String applyTextNormalization;
-    @JsonProperty("apply_language_text_normalization") public Boolean applyLanguageTextNormalization;
-    @JsonProperty("use_pvc_as_ivc") public Boolean usePvcAsIvc;
-    @JsonProperty("enable_logging") public Boolean enableLogging;
-    @JsonProperty("optimize_streaming_latency") public Integer optimizeStreamingLatency;
-    @JsonProperty("speaker") public String speaker;
-    @JsonProperty("target_language_code") public String targetLanguageCode;
-    @JsonProperty("pitch") public Double pitch;
-    @JsonProperty("pace") public Double pace;
-    @JsonProperty("loudness") public Double loudness;
-    @JsonProperty("speech_sample_rate") public Integer speechSampleRate;
-    @JsonProperty("enable_preprocessing") public Boolean enablePreprocessing;
+public final class SpeechRequest {
 
-    private SpeechRequest() {}
+    @JsonProperty("model")
+    private final String model;
 
-    public static Builder builder() { return new Builder(); }
+    @JsonProperty("input")
+    private final String input;
 
+    @JsonProperty("voice")
+    private final String voice;
+
+    @JsonProperty("response_format")
+    private final String responseFormat;
+
+    @JsonProperty("speed")
+    private final Double speed;
+
+    @JsonProperty("pitch")
+    private final Double pitch;
+
+    @JsonProperty("vol")
+    private final Double vol;
+
+    @JsonProperty("emotion")
+    private final String emotion;
+
+    private SpeechRequest(Builder b) {
+        this.model = b.model;
+        this.input = b.input;
+        this.voice = b.voice;
+        this.responseFormat = b.responseFormat;
+        this.speed = b.speed;
+        this.pitch = b.pitch;
+        this.vol = b.vol;
+        this.emotion = b.emotion;
+    }
+
+    /** Returns a new builder. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public String getModel() { return model; }
+
+    public String getInput() { return input; }
+
+    public String getVoice() { return voice; }
+
+    public String getResponseFormat() { return responseFormat; }
+
+    public Double getSpeed() { return speed; }
+
+    public Double getPitch() { return pitch; }
+
+    /** Output volume, or {@code null} when not set. */
+    public Double getVol() { return vol; }
+
+    /** Speaking emotion, or {@code null} when not set. */
+    public String getEmotion() { return emotion; }
+
+    /** Builder for {@link SpeechRequest}. */
     public static final class Builder {
-        private final SpeechRequest req = new SpeechRequest();
+        private String model;
+        private String input;
+        private String voice;
+        private String responseFormat;
+        private Double speed;
+        private Double pitch;
+        private Double vol;
+        private String emotion;
 
-        public Builder input(String input) { req.input = input; return this; }
-        public Builder model(String model) { req.model = model; return this; }
-        public Builder voice(String voice) { req.voice = voice; return this; }
-        public Builder stream(Boolean stream) { req.stream = stream; return this; }
-        public Builder responseFormat(String responseFormat) { req.responseFormat = responseFormat; return this; }
-        public Builder languageCode(String languageCode) { req.languageCode = languageCode; return this; }
-        public Builder voiceSettings(VoiceSettings voiceSettings) { req.voiceSettings = voiceSettings; return this; }
-        public Builder seed(Integer seed) { req.seed = seed; return this; }
-        public Builder speaker(String speaker) { req.speaker = speaker; return this; }
-        public Builder targetLanguageCode(String targetLanguageCode) { req.targetLanguageCode = targetLanguageCode; return this; }
-        public Builder pitch(Double pitch) { req.pitch = pitch; return this; }
-        public Builder pace(Double pace) { req.pace = pace; return this; }
-        public Builder loudness(Double loudness) { req.loudness = loudness; return this; }
-        public Builder speechSampleRate(Integer speechSampleRate) { req.speechSampleRate = speechSampleRate; return this; }
-        public Builder enablePreprocessing(Boolean enablePreprocessing) { req.enablePreprocessing = enablePreprocessing; return this; }
+        private Builder() {}
 
-        public SpeechRequest build() { return req; }
+        /** Model id, as returned by {@code GET /v1/models}. */
+        public Builder model(String model) { this.model = model; return this; }
+
+        /** Text to synthesize. */
+        public Builder input(String input) { this.input = input; return this; }
+
+        /** Voice to use. */
+        public Builder voice(String voice) { this.voice = voice; return this; }
+
+        /** Audio output format. */
+        public Builder responseFormat(String responseFormat) { this.responseFormat = responseFormat; return this; }
+
+        /** Playback speed. */
+        public Builder speed(Double speed) { this.speed = speed; return this; }
+
+        /**
+         * Voice pitch. MiniMax models require a whole number in [-12, 12].
+         */
+        public Builder pitch(Double pitch) { this.pitch = pitch; return this; }
+
+        /**
+         * Output volume, in the range {@code 0 < vol <= 10}. Optional.
+         *
+         * <p>Only MiniMax speech models read this field; other models ignore it.
+         * Out-of-range values are refused with a 422 before the request reaches the provider.
+         */
+        public Builder vol(Double vol) { this.vol = vol; return this; }
+
+        /**
+         * Speaking emotion, one of MiniMax's emotion values (for example {@code "happy"},
+         * {@code "sad"}, {@code "neutral"}). Optional.
+         *
+         * <p>Only MiniMax speech models read this field. {@code "fluent"} and {@code "whisper"}
+         * are accepted only on speech-2.6 models and are refused with a 422 otherwise.
+         */
+        public Builder emotion(String emotion) { this.emotion = emotion; return this; }
+
+        /** Builds the request. */
+        public SpeechRequest build() {
+            return new SpeechRequest(this);
+        }
     }
 }
