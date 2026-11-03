@@ -2,59 +2,121 @@ package com.meshapi.sdk.types.audio;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 
+/**
+ * Request body for {@code POST /v1/audio/speech}.
+ *
+ * <p>Build instances with {@link #builder()}.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SpeechRequest {
-    @JsonProperty("input") public String input;
-    @JsonProperty("model") public String model;
-    @JsonProperty("voice") public String voice;
-    @JsonProperty("stream") public Boolean stream;
-    @JsonProperty("response_format") public String responseFormat;
-    @JsonProperty("language_code") public String languageCode;
-    @JsonProperty("voice_settings") public VoiceSettings voiceSettings;
-    @JsonProperty("pronunciation_dictionary_locators") public List<PronunciationDictionaryLocator> pronunciationDictionaryLocators;
-    @JsonProperty("seed") public Integer seed;
-    @JsonProperty("previous_text") public String previousText;
-    @JsonProperty("next_text") public String nextText;
-    @JsonProperty("previous_request_ids") public List<String> previousRequestIds;
-    @JsonProperty("next_request_ids") public List<String> nextRequestIds;
-    @JsonProperty("apply_text_normalization") public String applyTextNormalization;
-    @JsonProperty("apply_language_text_normalization") public Boolean applyLanguageTextNormalization;
-    @JsonProperty("use_pvc_as_ivc") public Boolean usePvcAsIvc;
-    @JsonProperty("enable_logging") public Boolean enableLogging;
-    @JsonProperty("optimize_streaming_latency") public Integer optimizeStreamingLatency;
-    @JsonProperty("speaker") public String speaker;
-    @JsonProperty("target_language_code") public String targetLanguageCode;
-    @JsonProperty("pitch") public Double pitch;
-    @JsonProperty("pace") public Double pace;
-    @JsonProperty("loudness") public Double loudness;
-    @JsonProperty("speech_sample_rate") public Integer speechSampleRate;
-    @JsonProperty("enable_preprocessing") public Boolean enablePreprocessing;
+public final class SpeechRequest {
 
-    private SpeechRequest() {}
+    @JsonProperty("model")
+    private final String model;
 
-    public static Builder builder() { return new Builder(); }
+    @JsonProperty("input")
+    private final String input;
 
+    @JsonProperty("voice")
+    private final String voice;
+
+    @JsonProperty("response_format")
+    private final String responseFormat;
+
+    @JsonProperty("speed")
+    private final Double speed;
+
+    private SpeechRequest(Builder b) {
+        this.model = b.model;
+        this.input = b.input;
+        this.voice = b.voice;
+        this.responseFormat = b.responseFormat;
+        this.speed = b.speed;
+    }
+
+    /** @return a new builder. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** @return the model id. */
+    public String getModel() {
+        return model;
+    }
+
+    /** @return the text to synthesize. */
+    public String getInput() {
+        return input;
+    }
+
+    /** @return the voice name. */
+    public String getVoice() {
+        return voice;
+    }
+
+    /** @return the audio output format. */
+    public String getResponseFormat() {
+        return responseFormat;
+    }
+
+    /**
+     * @return the playback speed multiplier, or {@code null} when unset.
+     */
+    public Double getSpeed() {
+        return speed;
+    }
+
+    /** Builder for {@link SpeechRequest}. */
     public static final class Builder {
-        private final SpeechRequest req = new SpeechRequest();
+        private String model;
+        private String input;
+        private String voice;
+        private String responseFormat;
+        private Double speed;
 
-        public Builder input(String input) { req.input = input; return this; }
-        public Builder model(String model) { req.model = model; return this; }
-        public Builder voice(String voice) { req.voice = voice; return this; }
-        public Builder stream(Boolean stream) { req.stream = stream; return this; }
-        public Builder responseFormat(String responseFormat) { req.responseFormat = responseFormat; return this; }
-        public Builder languageCode(String languageCode) { req.languageCode = languageCode; return this; }
-        public Builder voiceSettings(VoiceSettings voiceSettings) { req.voiceSettings = voiceSettings; return this; }
-        public Builder seed(Integer seed) { req.seed = seed; return this; }
-        public Builder speaker(String speaker) { req.speaker = speaker; return this; }
-        public Builder targetLanguageCode(String targetLanguageCode) { req.targetLanguageCode = targetLanguageCode; return this; }
-        public Builder pitch(Double pitch) { req.pitch = pitch; return this; }
-        public Builder pace(Double pace) { req.pace = pace; return this; }
-        public Builder loudness(Double loudness) { req.loudness = loudness; return this; }
-        public Builder speechSampleRate(Integer speechSampleRate) { req.speechSampleRate = speechSampleRate; return this; }
-        public Builder enablePreprocessing(Boolean enablePreprocessing) { req.enablePreprocessing = enablePreprocessing; return this; }
+        private Builder() {
+        }
 
-        public SpeechRequest build() { return req; }
+        /** Sets the model id. */
+        public Builder model(String model) {
+            this.model = model;
+            return this;
+        }
+
+        /** Sets the text to synthesize. */
+        public Builder input(String input) {
+            this.input = input;
+            return this;
+        }
+
+        /** Sets the voice name. */
+        public Builder voice(String voice) {
+            this.voice = voice;
+            return this;
+        }
+
+        /** Sets the audio output format (for example {@code mp3}). */
+        public Builder responseFormat(String responseFormat) {
+            this.responseFormat = responseFormat;
+            return this;
+        }
+
+        /**
+         * Sets the playback speed multiplier sent as the top-level {@code speed} field.
+         *
+         * <p>The API accepts values from 0.25 to 4.0. The value is forwarded as sent and is
+         * never clamped; whether it takes effect depends on the provider serving the model.
+         *
+         * @param speed speed multiplier, or {@code null} to omit the field
+         */
+        public Builder speed(Double speed) {
+            this.speed = speed;
+            return this;
+        }
+
+        /** @return the built request. */
+        public SpeechRequest build() {
+            return new SpeechRequest(this);
+        }
     }
 }
