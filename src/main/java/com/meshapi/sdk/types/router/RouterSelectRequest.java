@@ -2,61 +2,73 @@ package com.meshapi.sdk.types.router;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.meshapi.sdk.types.chat.ChatMessage;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
- * Request body for POST /v1/router/select.
+ * Request body for the Auto Router selection endpoint.
+ *
+ * <p>Build instances with {@link #builder()}. Fields left unset are omitted from the
+ * serialised JSON.</p>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class RouterSelectRequest {
-    /** Required. The conversation messages used to select a model. */
-    @JsonProperty("messages") private List<ChatMessage> messages;
 
     /**
-     * Optional. API type to route for.
-     * Valid values: {@code "completions"}, {@code "responses"}, {@code "embeddings"}.
-     * Server defaults to {@code "completions"}.
+     * Name of the Auto Router weight profile to apply to this selection, for example
+     * {@code "cost_first"}. When omitted, the profile configured for the key, template or
+     * organisation applies, and otherwise the global default.
+     *
+     * @since 1.0.383
      */
-    @JsonProperty("api_type") private String apiType;
+    @JsonProperty("weight_profile")
+    private final String weightProfile;
+
+    private RouterSelectRequest(Builder builder) {
+        this.weightProfile = builder.weightProfile;
+    }
 
     /**
-     * Optional. Model IDs to exclude from selection.
+     * Returns a new builder.
+     *
+     * @return a new {@link Builder}
      */
-    @JsonProperty("exclude_models") private List<String> excludeModels;
+    public static Builder builder() {
+        return new Builder();
+    }
 
-    private RouterSelectRequest() {}
+    /**
+     * Returns the requested weight profile.
+     *
+     * @return the weight profile name, or {@code null} if unset
+     */
+    public String getWeightProfile() {
+        return weightProfile;
+    }
 
-    public List<ChatMessage> getMessages() { return messages; }
-    public String getApiType() { return apiType; }
-    public List<String> getExcludeModels() { return excludeModels; }
-
-    public static Builder builder() { return new Builder(); }
-
+    /** Builder for {@link RouterSelectRequest}. */
     public static final class Builder {
-        private final RouterSelectRequest req = new RouterSelectRequest();
-        private final List<ChatMessage> messages = new ArrayList<>();
+        private String weightProfile;
 
-        public Builder messages(List<ChatMessage> messages) {
-            this.messages.clear();
-            this.messages.addAll(messages);
+        private Builder() {
+        }
+
+        /**
+         * Sets the Auto Router weight profile to use for this selection.
+         *
+         * @param weightProfile the profile name, for example {@code "cost_first"}
+         * @return this builder
+         */
+        public Builder weightProfile(String weightProfile) {
+            this.weightProfile = weightProfile;
             return this;
         }
 
-        public Builder addMessage(ChatMessage message) {
-            this.messages.add(message);
-            return this;
-        }
-
-        public Builder apiType(String apiType) { req.apiType = apiType; return this; }
-        public Builder excludeModels(List<String> excludeModels) { req.excludeModels = excludeModels; return this; }
-
+        /**
+         * Builds the request.
+         *
+         * @return a new {@link RouterSelectRequest}
+         */
         public RouterSelectRequest build() {
-            if (messages.isEmpty()) throw new IllegalStateException("messages is required");
-            req.messages = new ArrayList<>(messages);
-            return req;
+            return new RouterSelectRequest(this);
         }
     }
 }
