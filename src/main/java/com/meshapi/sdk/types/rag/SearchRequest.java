@@ -3,32 +3,53 @@ package com.meshapi.sdk.types.rag;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.List;
-import java.util.Map;
-
+/**
+ * Request body for a RAG search.
+ *
+ * <p>Use {@link #builder()} to construct an instance. Fields left unset are omitted
+ * from the serialised JSON.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class SearchRequest {
-    @JsonProperty("query") private String query;
-    @JsonProperty("top_k") private Integer topK;
-    @JsonProperty("file_ids") private List<String> fileIds;
-    @JsonProperty("filter") private Map<String, Object> filter;
-    @JsonProperty("date_from") private Long dateFrom;
-    @JsonProperty("date_to") private Long dateTo;
+public final class SearchRequest {
 
-    private SearchRequest() {}
+    private final String mode;
 
-    public static Builder builder() { return new Builder(); }
+    private SearchRequest(Builder builder) {
+        this.mode = builder.mode;
+    }
 
+    /** @return the search mode, or {@code null} to use the server default. */
+    @JsonProperty("mode")
+    public String getMode() {
+        return mode;
+    }
+
+    /** @return a new builder. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** Builder for {@link SearchRequest}. */
     public static final class Builder {
-        private final SearchRequest req = new SearchRequest();
+        private String mode;
 
-        public Builder query(String query) { req.query = query; return this; }
-        public Builder topK(Integer topK) { req.topK = topK; return this; }
-        public Builder fileIds(List<String> fileIds) { req.fileIds = fileIds; return this; }
-        public Builder filter(Map<String, Object> filter) { req.filter = filter; return this; }
-        public Builder dateFrom(Long dateFrom) { req.dateFrom = dateFrom; return this; }
-        public Builder dateTo(Long dateTo) { req.dateTo = dateTo; return this; }
+        private Builder() {
+        }
 
-        public SearchRequest build() { return req; }
+        /**
+         * Sets {@code mode}: the search mode to run. Leave unset to use the server default.
+         *
+         * @param mode search mode
+         * @return this builder
+         */
+        public Builder mode(String mode) {
+            this.mode = mode;
+            return this;
+        }
+
+        /** @return the built request. */
+        public SearchRequest build() {
+            return new SearchRequest(this);
+        }
     }
 }
