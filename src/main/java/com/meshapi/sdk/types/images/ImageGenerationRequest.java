@@ -3,95 +3,156 @@ package com.meshapi.sdk.types.images;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Map;
-
 /**
- * Request body for POST /v1/images/generations.
+ * Request body for {@code POST /v1/images/generations}.
  *
- * <p>Build with {@link #builder()}:
+ * <p>Build with {@link #builder()}. Fields left {@code null} are omitted from the JSON body.
+ *
  * <pre>{@code
  * ImageGenerationRequest req = ImageGenerationRequest.builder()
- *     .prompt("A futuristic cityscape at sunset")
- *     .model("openai/dall-e-3")
- *     .n(1)
- *     .size("1024x1024")
+ *     .model("<image model id from GET /v1/models>")
+ *     .prompt("A paper boat on a pond")
+ *     .frameCount(4)
+ *     .frameDurationMs(250)
  *     .build();
  * }</pre>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ImageGenerationRequest {
-    // Core fields
-    @JsonProperty("prompt") public String prompt;
-    @JsonProperty("model") public String model;
-    @JsonProperty("n") public Integer n;
-    @JsonProperty("size") public String size;
-    @JsonProperty("quality") public String quality;
-    @JsonProperty("response_format") public String responseFormat;
-    @JsonProperty("output_format") public String outputFormat;
-    @JsonProperty("stream") public Boolean stream;
 
-    // Additional spec fields (finding #11/#12)
-    @JsonProperty("aspect_ratio") public String aspectRatio;
-    @JsonProperty("resolution") public String resolution;
-    @JsonProperty("output_compression") public Integer outputCompression;
-    /** Background handling: {@code transparent}, {@code opaque}, or {@code auto}. */
-    @JsonProperty("background") public String background;
-    /** Moderation level: {@code low} or {@code auto}. */
-    @JsonProperty("moderation") public String moderation;
-    /** Number of partial images to stream (0–3). */
-    @JsonProperty("partial_images") public Integer partialImages;
-    /** Input image(s): a String or List of Strings (base64 data-URLs or URLs). */
-    @JsonProperty("image") public Object image;
-    /** Random seed (-1 to 2147483647). */
-    @JsonProperty("seed") public Integer seed;
-    /** Sequential generation mode: {@code auto} or {@code disabled}. */
-    @JsonProperty("sequential_image_generation") public String sequentialImageGeneration;
+    /** Model id, as returned by {@code GET /v1/models}. */
+    @JsonProperty("model")
+    public String model;
+
+    /** Text prompt describing the image. */
+    @JsonProperty("prompt")
+    public String prompt;
+
+    /** Number of images to generate. */
+    @JsonProperty("n")
+    public Integer n;
+
+    /** Output size, for example {@code 1024x1024}. */
+    @JsonProperty("size")
+    public String size;
+
+    /** Quality tier, where the model supports it. */
+    @JsonProperty("quality")
+    public String quality;
+
+    /** {@code url} or {@code b64_json}. */
+    @JsonProperty("response_format")
+    public String responseFormat;
+
+    /** Style hint, where the model supports it. */
+    @JsonProperty("style")
+    public String style;
+
+    /** End-user identifier. */
+    @JsonProperty("user")
+    public String user;
+
+    /** Background mode, where the model supports it. */
+    @JsonProperty("background")
+    public String background;
+
+    /** Moderation level, where the model supports it. */
+    @JsonProperty("moderation")
+    public String moderation;
+
+    /** Output file format, where the model supports it. */
+    @JsonProperty("output_format")
+    public String outputFormat;
+
+    /** Output compression level, where the model supports it. */
+    @JsonProperty("output_compression")
+    public Integer outputCompression;
+
+    /** Negative prompt, where the model supports it. */
+    @JsonProperty("negative_prompt")
+    public String negativePrompt;
+
+    /** Aspect ratio, where the model supports it. */
+    @JsonProperty("aspect_ratio")
+    public String aspectRatio;
+
+    /** Reference image(s): a URL or data URI string, or a list of them. */
+    @JsonProperty("image")
+    public Object image;
+
+    /** Random seed, where the model supports it. */
+    @JsonProperty("seed")
+    public Integer seed;
+
+    /** Sequential image generation mode, where the model supports it. */
+    @JsonProperty("sequential_image_generation")
+    public String sequentialImageGeneration;
+
     /** Options for sequential image generation. */
-    @JsonProperty("sequential_image_generation_options") public Map<String, Object> sequentialImageGenerationOptions;
-    /** Guidance scale (1–10). */
-    @JsonProperty("guidance_scale") public Double guidanceScale;
-    /** Whether to watermark the output. */
-    @JsonProperty("watermark") public Boolean watermark;
-    /** Options for prompt optimisation. */
-    @JsonProperty("optimize_prompt_options") public Map<String, Object> optimizePromptOptions;
+    @JsonProperty("sequential_image_generation_options")
+    public Object sequentialImageGenerationOptions;
 
-    private ImageGenerationRequest() {}
+    /** Guidance scale, where the model supports it. */
+    @JsonProperty("guidance_scale")
+    public Number guidanceScale;
 
-    public static Builder builder() { return new Builder(); }
+    /** Whether to add a watermark, where the model supports it. */
+    @JsonProperty("watermark")
+    public Boolean watermark;
 
+    /** Prompt optimisation options, where the model supports it. */
+    @JsonProperty("optimize_prompt_options")
+    public Object optimizePromptOptions;
+
+    /** Number of frames to generate, for models that produce animated output. */
+    @JsonProperty("frame_count")
+    public Integer frameCount;
+
+    /** Duration of each frame in milliseconds, for models that produce animated output. */
+    @JsonProperty("frame_duration_ms")
+    public Integer frameDurationMs;
+
+    public ImageGenerationRequest() {}
+
+    /** Returns a new builder. */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /** Builder for {@link ImageGenerationRequest}. */
     public static final class Builder {
-        private final ImageGenerationRequest req = new ImageGenerationRequest();
+        private final ImageGenerationRequest r = new ImageGenerationRequest();
 
-        public Builder prompt(String prompt) { req.prompt = prompt; return this; }
-        public Builder model(String model) { req.model = model; return this; }
-        public Builder n(Integer n) { req.n = n; return this; }
-        public Builder size(String size) { req.size = size; return this; }
-        public Builder quality(String quality) { req.quality = quality; return this; }
-        public Builder responseFormat(String responseFormat) { req.responseFormat = responseFormat; return this; }
-        public Builder outputFormat(String outputFormat) { req.outputFormat = outputFormat; return this; }
-        public Builder stream(Boolean stream) { req.stream = stream; return this; }
-        public Builder aspectRatio(String aspectRatio) { req.aspectRatio = aspectRatio; return this; }
-        public Builder resolution(String resolution) { req.resolution = resolution; return this; }
-        public Builder outputCompression(Integer outputCompression) { req.outputCompression = outputCompression; return this; }
-        public Builder background(String background) { req.background = background; return this; }
-        public Builder moderation(String moderation) { req.moderation = moderation; return this; }
-        public Builder partialImages(Integer partialImages) { req.partialImages = partialImages; return this; }
-        public Builder image(Object image) { req.image = image; return this; }
-        public Builder seed(Integer seed) { req.seed = seed; return this; }
-        public Builder sequentialImageGeneration(String sequentialImageGeneration) {
-            req.sequentialImageGeneration = sequentialImageGeneration; return this;
-        }
-        public Builder sequentialImageGenerationOptions(Map<String, Object> opts) {
-            req.sequentialImageGenerationOptions = opts; return this;
-        }
-        public Builder guidanceScale(Double guidanceScale) { req.guidanceScale = guidanceScale; return this; }
-        public Builder watermark(Boolean watermark) { req.watermark = watermark; return this; }
-        public Builder optimizePromptOptions(Map<String, Object> opts) {
-            req.optimizePromptOptions = opts; return this;
-        }
+        private Builder() {}
 
-        public ImageGenerationRequest build() {
-            return req;
-        }
+        public Builder model(String v) { r.model = v; return this; }
+        public Builder prompt(String v) { r.prompt = v; return this; }
+        public Builder n(Integer v) { r.n = v; return this; }
+        public Builder size(String v) { r.size = v; return this; }
+        public Builder quality(String v) { r.quality = v; return this; }
+        public Builder responseFormat(String v) { r.responseFormat = v; return this; }
+        public Builder style(String v) { r.style = v; return this; }
+        public Builder user(String v) { r.user = v; return this; }
+        public Builder background(String v) { r.background = v; return this; }
+        public Builder moderation(String v) { r.moderation = v; return this; }
+        public Builder outputFormat(String v) { r.outputFormat = v; return this; }
+        public Builder outputCompression(Integer v) { r.outputCompression = v; return this; }
+        public Builder negativePrompt(String v) { r.negativePrompt = v; return this; }
+        public Builder aspectRatio(String v) { r.aspectRatio = v; return this; }
+        public Builder image(Object v) { r.image = v; return this; }
+        public Builder seed(Integer v) { r.seed = v; return this; }
+        public Builder sequentialImageGeneration(String v) { r.sequentialImageGeneration = v; return this; }
+        public Builder sequentialImageGenerationOptions(Object v) { r.sequentialImageGenerationOptions = v; return this; }
+        public Builder guidanceScale(Number v) { r.guidanceScale = v; return this; }
+        public Builder watermark(Boolean v) { r.watermark = v; return this; }
+        public Builder optimizePromptOptions(Object v) { r.optimizePromptOptions = v; return this; }
+
+        /** Sets {@code frame_count}: the number of frames to generate. */
+        public Builder frameCount(Integer v) { r.frameCount = v; return this; }
+
+        /** Sets {@code frame_duration_ms}: how long each frame is shown, in milliseconds. */
+        public Builder frameDurationMs(Integer v) { r.frameDurationMs = v; return this; }
+
+        public ImageGenerationRequest build() { return r; }
     }
 }
