@@ -2,52 +2,83 @@ package com.meshapi.sdk.types.video;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.List;
 
+/** Request body for video generation. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class VideoGenerationRequest {
-    @JsonProperty("model") public String model;
-    @JsonProperty("content") public List<VideoContentItem> content;
-    @JsonProperty("callback_url") public String callbackUrl;
-    @JsonProperty("return_last_frame") public Boolean returnLastFrame;
-    @JsonProperty("service_tier") public String serviceTier;
-    @JsonProperty("execution_expires_after") public Integer executionExpiresAfter;
-    @JsonProperty("generate_audio") public Boolean generateAudio;
-    @JsonProperty("draft") public Boolean draft;
-    @JsonProperty("resolution") public String resolution;
-    @JsonProperty("ratio") public String ratio;
-    @JsonProperty("duration") public Integer duration;
-    @JsonProperty("frames") public Integer frames;
-    @JsonProperty("seed") public Integer seed;
-    @JsonProperty("camera_fixed") public Boolean cameraFixed;
-    @JsonProperty("watermark") public Boolean watermark;
-    @JsonProperty("safety_identifier") public String safetyIdentifier;
-    @JsonProperty("priority") public Integer priority;
+public final class VideoGenerationRequest {
 
-    private VideoGenerationRequest() {}
+    private final String model;
+    private final String prompt;
+    private final Integer width;
+    private final Integer height;
 
-    public static Builder builder() { return new Builder(); }
+    private VideoGenerationRequest(Builder b) {
+        this.model = b.model;
+        this.prompt = b.prompt;
+        this.width = b.width;
+        this.height = b.height;
+    }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    @JsonProperty("model")
+    public String getModel() {
+        return model;
+    }
+
+    @JsonProperty("prompt")
+    public String getPrompt() {
+        return prompt;
+    }
+
+    /** Output width in pixels. */
+    @JsonProperty("width")
+    public Integer getWidth() {
+        return width;
+    }
+
+    /** Output height in pixels. */
+    @JsonProperty("height")
+    public Integer getHeight() {
+        return height;
+    }
+
+    /** Builder for {@link VideoGenerationRequest}. */
     public static final class Builder {
-        private final VideoGenerationRequest req = new VideoGenerationRequest();
+        private String model;
+        private String prompt;
+        private Integer width;
+        private Integer height;
 
-        public Builder model(String model) { req.model = model; return this; }
-        public Builder content(List<VideoContentItem> content) { req.content = content; return this; }
-        public Builder callbackUrl(String callbackUrl) { req.callbackUrl = callbackUrl; return this; }
-        public Builder returnLastFrame(Boolean returnLastFrame) { req.returnLastFrame = returnLastFrame; return this; }
-        public Builder serviceTier(String serviceTier) { req.serviceTier = serviceTier; return this; }
-        public Builder generateAudio(Boolean generateAudio) { req.generateAudio = generateAudio; return this; }
-        public Builder draft(Boolean draft) { req.draft = draft; return this; }
-        public Builder resolution(String resolution) { req.resolution = resolution; return this; }
-        public Builder ratio(String ratio) { req.ratio = ratio; return this; }
-        public Builder duration(Integer duration) { req.duration = duration; return this; }
-        public Builder frames(Integer frames) { req.frames = frames; return this; }
-        public Builder seed(Integer seed) { req.seed = seed; return this; }
-        public Builder cameraFixed(Boolean cameraFixed) { req.cameraFixed = cameraFixed; return this; }
-        public Builder watermark(Boolean watermark) { req.watermark = watermark; return this; }
-        public Builder safetyIdentifier(String safetyIdentifier) { req.safetyIdentifier = safetyIdentifier; return this; }
-        public Builder priority(Integer priority) { req.priority = priority; return this; }
+        private Builder() {
+        }
 
-        public VideoGenerationRequest build() { return req; }
+        public Builder model(String model) {
+            this.model = model;
+            return this;
+        }
+
+        public Builder prompt(String prompt) {
+            this.prompt = prompt;
+            return this;
+        }
+
+        /** Output width in pixels. */
+        public Builder width(Integer width) {
+            this.width = width;
+            return this;
+        }
+
+        /** Output height in pixels. */
+        public Builder height(Integer height) {
+            this.height = height;
+            return this;
+        }
+
+        public VideoGenerationRequest build() {
+            return new VideoGenerationRequest(this);
+        }
     }
 }
